@@ -4,16 +4,29 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+var crypto = require('crypto');
+// var session = require('express-session');
+var session = require('cookie-session');
+var passport = require('passport');
+var flash = require('connect-flash');
 
-var routes = require('./controllers/index');
+// Set up routes
+var index = require('./controllers/index');
 var users = require('./controllers/users');
-var signin = require('./controllers/signin');
 
 var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'jade');
+app.set('view engine', 'ejs');
+
+const secretToken = crypto.randomBytes(32).toString('hex');
+// passport setup
+app.use(session({ secret: secretToken, cookie: { maxAge: 60 * 60 * 6 } })); // Max age is 6 hours
+app.use(passport.initialize());
+app.use(passport.session());
+app.use(flash());
+require('./config/passport')(passport);
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -23,7 +36,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', routes);
+app.use('/', index);
 app.use('/users', users);
 
 // catch 404 and forward to error handler
