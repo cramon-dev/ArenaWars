@@ -2,6 +2,7 @@ var mongoose = require('mongoose');
 var util = require('util');
 mongoose.connect('mongodb://localhost/data');
 var User = require('./user.js');
+var ApiUser = require('./api-user.js');
 
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error'));
@@ -81,5 +82,25 @@ exports.getUserByToken = function(token, callback) {
 exports.setResetToken = function(user, callback) {
 	user.save(function(err) {
 		callback(err);
+	});
+}
+
+
+// API User functions
+
+exports.createApiUser = function(apiUser, callback) {
+	var newApiUser = new ApiUser();
+
+	newApiUser.username = apiUser.username;
+	newApiUser.password = newApiUser.generateHash(apiUser.password);
+
+	newApiUser.save(function(err) {
+		callback(err);
+	});
+}
+
+exports.getApiUser = function(apiUsername, callback) {
+	ApiUser.findOne({ username: apiUsername }, function(err, apiUser) {
+		callback(err, apiUser);
 	});
 }
