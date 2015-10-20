@@ -2,8 +2,28 @@ body {
   /*padding: 50px;*/
   /*padding-top: 80px;*/
   font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+  margin: 0px;
+  padding: 0px;
+  overflow: hidden;
 }
 
 a {
   color: #00B7FF;
+}
+
+#container {
+	margin: 0 auto;
+}
+
+#inset {
+	width: 200px;
+    height: 200px;
+    background-color: #fff; /* or transparent; will show through only if renderer alpha: true */
+    border: 1px solid black; /* or none; */
+    margin: 20px;
+    padding: 0px;
+    position: absolute;
+    left: 0px;
+    bottom: 0px;
+    z-index: 100;
 }

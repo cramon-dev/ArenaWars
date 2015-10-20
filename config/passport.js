@@ -73,13 +73,20 @@ module.exports = function(passport) {
 					deaths: 0
 				};
 
-				dbManager.createUser(newUser, function(err) {
-					if(err) {
-						return done(err, null);
-					}
+				if(newUser.validUsername(username)) {
+					dbManager.createUser(newUser, function(err) {
+						if(err) {
+							return done(err, null);
+						}
 
-					return done(null, newUser);
-				});
+						console.log('User successfully created with username: ' + username);
+						return done(null, newUser);
+					});
+				}
+				else {
+					console.log('Invalid username: ' + username);
+					return done({ status: 400, message: 'Improperly formatted username' });
+				}
 			}
 		});
 	}));

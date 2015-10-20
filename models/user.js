@@ -25,4 +25,9 @@ userSchema.methods.validPassword = function(password) {
 	return bcrypt.compareSync(password, this.password);
 };
 
+userSchema.methods.validUsername = function(username) {
+	return (username.match(/^[a-zA-Z0-9\-\_]+$/) && 
+		(username.length >= 3 && username.length <= 15));
+};
+
 module.exports = mongoose.model('User', userSchema);

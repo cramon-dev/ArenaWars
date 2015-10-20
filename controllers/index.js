@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var passport = require('passport');
 var dbManager = require('../models/db-manager.js');
+var util = require('util');
 
 
 router.get('/', function(req, res, next) {
@@ -9,11 +10,15 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/home', isAuthenticated, function(req, res, next) {
+	console.log('user: ' + req.user);
+	console.log('session: ');
+	console.log(req.session.toJSON());
 	res.render('home', { user: req.user, message: req.flash('message') });
 });
 
 router.get('/signout', function(req, res, next) {
 	req.session = null;
+	res.status(302);
 	res.redirect('/');
 });
 
