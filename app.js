@@ -5,10 +5,16 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var crypto = require('crypto');
-// var session = require('express-session');
 var session = require('cookie-session');
 var passport = require('passport');
 var flash = require('connect-flash');
+var winston = require('winston');
+var Room = require('./models/game_models/room');
+var http = require('http');
+var server = http.createServer(app);
+var app = express();
+var io = require('socket.io').listen(server);
+server.listen(80);
 
 // Set up routes
 var index = require('./controllers/index');
@@ -16,8 +22,6 @@ var users = require('./controllers/users');
 var recovery = require('./controllers/recover');
 var api = require('./controllers/api');
 var game = require('./controllers/game');
-
-var app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -74,6 +78,32 @@ app.use(function(err, req, res, next) {
     message: err.message,
     error: {}
   });
+});
+
+
+// Game handlers
+
+io.on('connection', function(client) {
+    console.log('Client connected to server');
+    io.emit('sampleText', { text: 'Fight!' });
+
+    var room = new Room({ id: 1001 }, { id: 1002 });
+    winston.info(room);
+
+    client.on('playerMoved', function(data) {
+        io.emit('sampleText', { text: 'Player moved' });
+        console.log('Player moved');
+        winston.info(data);
+    });
+
+    client.on('playerUseSkill', function(data) {
+        console.log('Player used skill');
+        winston.info(data);
+    });
+
+    client.on('disconnect', function() {
+        console.log('Client disconnected');
+    });
 });
 
 
