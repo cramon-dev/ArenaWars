@@ -21,13 +21,28 @@
 					</div>
 					<section class="collapse navbar-collapse">
 						<ul class="nav navbar-nav">
-							<li><a href="/signout">Sign Out</a></li>
+					        <% if (user) { %>
+					        	<li><a href="/signout">Sign Out</a></li>
+					        <% } else { %>
+					        	<li><a href="/signin">Sign In</a></li>
+					        <% } %>
 						</ul>
 					</section>
 				</div>
 			</nav>
 		</header>
+        <% if (user) { %>
+            <div class="alert alert-success"><%= user %></div>
+        <% } else { %>
+        	<div class="alert alert-danger">Your battle statistics will not be saved unless you register for an account.</div>
+        <% } %>
 		<div id="container">
+			<% if (!user) { %>
+				<div>
+		        	<input type="text" id="usernameEntry" name="username" placeholder="Username" />
+		        	<button onclick="init(usernameEntry)" /> Play
+		        </div>
+	        <% } %>
 		<div id="inset">
 		<script src="../js/game.js"></script>
 	</body>

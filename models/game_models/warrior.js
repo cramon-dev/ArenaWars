@@ -1,4 +1,4 @@
-var BasePlayer = require('./basePlayer.js');
+var BaseCharacter = require('./baseCharacter.js');
 var Skill = require('./skill.js');
 
 var Warrior = function Warrior() {
@@ -8,7 +8,7 @@ var Warrior = function Warrior() {
 	this.mechanic = null;
 }
 
-Warrior.prototype = new BasePlayer();
+Warrior.prototype = new BaseCharacter();
 Warrior.prototype.constructor = Warrior();
 
 Warrior.prototype.getHealth = function() {

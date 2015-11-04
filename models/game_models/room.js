@@ -1,10 +1,17 @@
 var uuid = require('node-uuid');
 var RoomState = require('./roomstate.js');
 
-var Room = function Room(player1, player2) {
+var Room = function Room() {
 	this.roomId = uuid.v4();
-	this.players = [ player1, player2 ];
-	this.state = RoomState.FULL;
+	this.players = [];
+	this.state = RoomState.EMPTY;
+	
+	// if player is provided, push them to the room and change room state
+	if(arguments.length > 0) {
+		console.log(arguments[0]);
+		this.players.push(arguments[0]);
+		this.state = RoomState.AVAILABLE;
+	}
 }
 
 Room.prototype = {
@@ -26,8 +33,11 @@ Room.prototype = {
 			if(this.players.length == 2) {
 				this.state = RoomState.FULL;
 			}
+			else {
+				this.state = RoomState.AVAILABLE;
+			}
 		}
-	},
+	}
 }
 
 module.exports = Room;

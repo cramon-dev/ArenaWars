@@ -1,4 +1,4 @@
-var scene, socket, camera, renderer, controls, container, axes, axesContainer, axisScene, axisCamera, axisRenderer;
+var scene, socket, camera, renderer, controls, container, axes, axesContainer, axisScene, axisCamera, axisRenderer, username;
 var WIDTH = 1600;
 var HEIGHT = 900;
 var AXIS_CAM_DISTANCE = 300;
@@ -9,10 +9,9 @@ var keyState = {};
 Physijs.scripts.worker = '../js/libs/physijs_worker.js';
 Physijs.scripts.ammo = '../libs/ammo.js';
 
-function sampleFunc(data) {
+function updateStatusMessage(data) {
     var text2 = document.createElement('div');
     text2.style.position = 'absolute';
-    //text2.style.zIndex = 1;    // if you still don't see the label, try uncommenting this
     text2.style.width = 400;
     text2.style.height = 400;
     text2.style.color = '0xFFFFFF';
@@ -22,9 +21,10 @@ function sampleFunc(data) {
     document.body.appendChild(text2);
 }
 
-function init() {
+function init(name) {
+    username = name.value;
     socket = io.connect('/');
-    socket.on('sampleText', sampleFunc);
+    socket.on('statusMessage', updateStatusMessage);
 
 	scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -50, 0));
@@ -125,7 +125,7 @@ function addPlayerAndTerrain() {
     //     colorSpecular: [0.8999999761581421, 0.8999999761581421, 0.8999999761581421]
     // });
 
-    var terrainTexture = new THREE.MeshLambertMaterial({ color: 0x363636 });
+    var terrainTexture = new THREE.MeshLambertMaterial({ color: 0xCDCDCD });
 
     var loader = new THREE.JSONLoader();
     loader.load("../js/assets/models/terrain.json", function(geometry) {
@@ -196,6 +196,8 @@ function addPlayerAndTerrain() {
         // scene.add(ground);
 
         box.addEventListener('collision', boxCollision);
+
+        socket.emit('searchForMatch', { id: 1093249, username: username });
 
         animate();
     }, "../js/assets/textures/texturev1.png");
@@ -339,24 +341,24 @@ function detectSkillUse() {
         skillUsed = 'classAbility_2';
     }
 
-    if(keyState[112]) {
+    if(keyState[70]) {
         skillUsed = 'classMechanic_1';
     }
 
     // These four only used by sorcerer
-    if(keyState[113]) {
+    if(keyState[82]) {
         skillUsed = 'classMechanic_2';
     }
 
-    if(keyState[114]) {
+    if(keyState[84]) {
         skillUsed = 'classMechanic_3';
     }
 
-    if(keyState[115]) {
+    if(keyState[71]) {
         skillUsed = 'classMechanic_4';
     }
 
-    if(keyState[116]) {
+    if(keyState[72]) {
         skillUsed = 'classMechanic_5';
     }
 
@@ -378,4 +380,6 @@ function setupKeyControls() {
     }, true);
 }
 
-window.onload = init;
+// init();
+
+// window.onload = init;

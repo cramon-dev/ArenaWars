@@ -6,4 +6,4 @@ var GameState = {
 	GAME_OVER: "GAME_OVER"
 };
 
-module.exports = Object.freeze(GameState);
+module.exports = Object.freeze(GameState); // Do this to make the object immutable

@@ -28,11 +28,11 @@ var Debuff = function Debuff(effectId, duration, stacks) {
 Debuff.prototype = {
 	getEffectId: function() {
 		return this.id;
-	}
+	},
 
 	getTotalDuration: function() {
 		return this.duration;
-	}
+	},
 
 	getStacks: function() {
 		return this.stacks;

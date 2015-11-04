@@ -1,11 +1,11 @@
-function BasePlayer() {
+function BaseCharacter() {
 	this.health = 5000;
 	this.movementSpeed = 65;
 	this.buffs = [];
 	this.debuffs = [];
 }
 
-BasePlayer.prototype = {
+BaseCharacter.prototype = {
 	getHealth: function() {
 		return this.health;
 	},
@@ -32,4 +32,4 @@ BasePlayer.prototype = {
 }
 
 
-module.exports = BasePlayer;
+module.exports = BaseCharacter;

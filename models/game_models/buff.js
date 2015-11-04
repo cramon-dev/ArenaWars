@@ -28,11 +28,11 @@ var Buff = function Buff(effectId, duration, stacks) {
 Buff.prototype = {
 	getEffectId: function() {
 		return this.id;
-	}
+	},
 
 	getTotalDuration: function() {
 		return this.duration;
-	}
+	},
 
 	getStacks: function() {
 		return this.stacks;
