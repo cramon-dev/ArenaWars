@@ -1,6 +1,8 @@
-var scene, socket, camera, renderer, controls, container, axes, axesContainer, axisScene, axisCamera, axisRenderer, username;
-var WIDTH = 1600;
-var HEIGHT = 900;
+var scene, socket, camera, renderer, controls, container, 
+    axes, axesContainer, axisScene, axisCamera, axisRenderer, 
+        username, gameState, clock, stats, mouseX, mouseY;
+var WIDTH = 1280;
+var HEIGHT = 720;
 var AXIS_CAM_DISTANCE = 300;
 var AXIS_CAM_WIDTH = 200;
 var AXIS_CAM_HEIGHT = 200;
@@ -9,22 +11,27 @@ var keyState = {};
 Physijs.scripts.worker = '../js/libs/physijs_worker.js';
 Physijs.scripts.ammo = '../libs/ammo.js';
 
-function updateStatusMessage(data) {
-    var text2 = document.createElement('div');
-    text2.style.position = 'absolute';
-    text2.style.width = 400;
-    text2.style.height = 400;
-    text2.style.color = '0xFFFFFF';
-    text2.innerHTML = data.text;
-    text2.style.top = 200 + 'px';
-    text2.style.left = 200 + 'px';
-    document.body.appendChild(text2);
+
+// Initialize functions
+
+function initMenu() {
+    gameState = GameState.IN_MENU;
 }
 
-function init(name) {
+function initLobby() {
+    gameState = GameState.IN_GAME_LOBBY;
+}
+
+function initGame(name) {
+    document.addEventListener('mousemove', detectMouseMovement, false);
+    setupStats();
+
     username = name.value;
+    gameState = GameState.IN_MENU;
+    clock = new THREE.Clock();
     socket = io.connect('/');
     socket.on('statusMessage', updateStatusMessage);
+    socket.on('updateClient', updateGameClient);
 
 	scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -50, 0));
@@ -43,8 +50,8 @@ function init(name) {
 
 	// Create an event listener that resizes the renderer with the browser window.
     window.addEventListener('resize', function() {
-    	var newWidth = window.innerWidth;
-    	var newHeight = window.innerHeight;
+    	var newWidth = window.innerWidth - 100;
+    	var newHeight = window.innerHeight - 56;
 		renderer.setSize(newWidth, newHeight);
 		camera.aspect = newWidth / newHeight;
 		camera.updateProjectionMatrix();
@@ -98,6 +105,15 @@ function init(name) {
   //       setupKeyControls();
   //       initAxesCam();
   //   }, null);
+}
+
+function setupStats() {
+    stats = new Stats();
+    stats.setMode(0);
+    stats.domElement.style.position = 'relative';
+    stats.domElement.style.left = '0px';
+    stats.domElement.style.top = '0px';
+    document.getElementById('stats').appendChild(stats.domElement);
 }
 
 function initAxesCam() {
@@ -197,7 +213,9 @@ function addPlayerAndTerrain() {
 
         box.addEventListener('collision', boxCollision);
 
-        socket.emit('searchForMatch', { id: 1093249, username: username });
+        socket.emit('searchForMatch', username);
+
+        gameState = GameState.GAME_IN_PROGRESS; // change game state to game in progress 
 
         animate();
     }, "../js/assets/textures/texturev1.png");
@@ -219,7 +237,17 @@ function cameraCollision(otherObj, relativeVelocity, relativeRotation, contactNo
 }
 
 function animate() {
-	requestAnimationFrame(animate);
+    var time = clock.getElapsedTime();
+    var delta = clock.getDelta();
+
+    window.delta = delta;
+
+    setTimeout(function() {
+        requestAnimationFrame(animate);
+        stats.update();
+    }, 1000 / 30);
+
+	// requestAnimationFrame(animate);
     scene.simulate();
 
     // update();
@@ -235,7 +263,7 @@ function animate() {
     // camera.position.z = cameraOffset.z;
     camera.lookAt(player.position);
 
-    gameLoop();
+    gameLoop(delta);
     render();
 }
 
@@ -250,33 +278,52 @@ function render() {
     // camera.lookAt(player.position);
 }
 
-function gameLoop() {
-    detectMovement();
+function gameLoop(delta) {
+    detectMovement(delta);
     detectSkillUse();
+    detectGameOver();
 
     // Disable controls until player finishes typing in text box?
-    if(keyState[84]) {
+    if(keyState[89]) {
         console.log('bring up text box');
     }
 }
 
 
+// Socket.IO listeners
+
+function updateStatusMessage(data) {
+    var text2 = document.createElement('div');
+    text2.style.position = 'absolute';
+    text2.style.fontSize = '48';
+    text2.style.color = 'red';
+    text2.innerHTML = data.text;
+    text2.style.top = 200 + 'px';
+    text2.style.left = 200 + 'px';
+    document.body.appendChild(text2);
+}
+
+function updateGameClient(data) {
+    console.log(data);
+}
+
+
 // Game loop functions
 
-function detectMovement() {
+function detectMovement(delta) {
     var player = scene.getObjectByName('player');
     var oldPosition = { position: player.position, rotation: player.rotation };
     
     if (keyState[65]) {
         // A - Turn left
         player.__dirtyRotation = true;
-        player.rotation.y += 0.10;
+        player.rotation.y += (delta * 45 * Math.PI / 180);
     }
 
     if (keyState[68]) {
         // D - Turn right
         player.__dirtyRotation = true;
-        player.rotation.y -= 0.10;
+        player.rotation.y -= (delta * 45 * Math.PI / 180);
     }
     
     if (keyState[87]) {
@@ -331,7 +378,27 @@ function detectSkillUse() {
     
     if(keyState[52]) {
         skillUsed = 'heal';
+        if(!scene.getObjectByName('aoeTarget')) {
+            console.log('Draw aoe target cursor');
+            var material = new THREE.MeshBasicMaterial({
+                color: 0x0000ff
+            });
+
+            var radius = 5;
+            var segments = 32; //<-- Increase or decrease for more resolution I guess
+
+            var circleGeometry = new THREE.CircleGeometry(radius, segments);              
+            var circle = new THREE.Mesh(circleGeometry, material);
+            circle.name = 'aoeTarget';
+            circle.position.x = mouseX;
+            circle.position.z = mouseY;
+            scene.add(circle);
+        }
+        else {
+            console.log(scene.getObjectByName('aoeTarget'));
+        }
     }
+        
 
     if(keyState[53]) {
         skillUsed = 'classAbility_1';
@@ -343,6 +410,7 @@ function detectSkillUse() {
 
     if(keyState[70]) {
         skillUsed = 'classMechanic_1';
+        socket.emit('startGame', { ready: true });
     }
 
     // These four only used by sorcerer
@@ -368,8 +436,19 @@ function detectSkillUse() {
     }
 }
 
+function detectGameOver() {
+    // if player health hits 0, game over
+}
+
+function detectMouseMovement(event) {
+    mouseX = event.clientX - (WIDTH / 2);
+    mouseY = event.clientY - (HEIGHT / 2);
+    console.log('X: ' + mouseX + '  Y: ' + mouseY);
+}
+
 
 // Set up key event handlers
+
 function setupKeyControls() {
     window.addEventListener('keydown', function(e) {
         keyState[e.keyCode || e.which] = true;
@@ -380,6 +459,4 @@ function setupKeyControls() {
     }, true);
 }
 
-// init();
-
-// window.onload = init;
+// window.onload = initGame;

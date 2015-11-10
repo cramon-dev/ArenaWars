@@ -9,6 +9,7 @@ var session = require('cookie-session');
 var passport = require('passport');
 var flash = require('connect-flash');
 var winston = require('winston');
+var _ = require('underscore');
 var app = express();
 
 // Game dependencies
@@ -26,8 +27,7 @@ var Weapon = require('./models/game_models/weapon.js');
 var Skill = require('./models/game_models/skill.js');
 var io = require('socket.io').listen(server);
 server.listen(80);
-// var roomList = [ new Room(), new Room(), new Room() ];
-var roomList = [ new Room() ];
+var roomList = [ new Room(), new Room(), new Room() ];
 
 
 // Set up routes
@@ -99,20 +99,27 @@ winston.info(roomList);
 
 // Game handlers
 
+function beginGame(room) {
+    room.startGame();
+    setInterval(function() {
+        io.emit('updateClient', { text: 'update' });
+    }, 1000);
+}
+
 io.on('connection', function(client) {
     console.log('Client connected to server');
-    // io.emit('sampleText', { text: 'Fight!' });
+
+    winston.info(roomList);
 
     // var room = new Room({ id: 1001 }, { id: 1002 });
     // winston.info(room);
 
-    client.on('searchForMatch', function(data) {
+    client.on('searchForMatch', function(username) {
         // var allRoomsFull = true;
-        console.log('Searching for match..');
-
         for(var i in roomList) {
             if(roomList[i].getRoomState != RoomState.FULL) {
-                roomList[i].addPlayer(data);
+                roomList[i].addPlayer({ id: client.id, username: username, ready: false });
+                console.log('player joined room');
                 winston.info(roomList[i]);
                 // allRoomsFull = false;
                 break;
@@ -122,7 +129,7 @@ io.on('connection', function(client) {
         // some check to see if all rooms are full
         // roomList.push(new Room(data));
 
-        winston.info(roomList);
+        // winston.info(roomList);
 
         // console.log(roomList);
 
@@ -136,7 +143,7 @@ io.on('connection', function(client) {
     });
 
     client.on('playerMoved', function(data) {
-        io.emit('sampleText', { text: 'Player moved' });
+        io.emit('statusMessage', { text: 'Player moved' });
         console.log('Player moved');
         winston.info(data);
     });
@@ -148,6 +155,38 @@ io.on('connection', function(client) {
 
     client.on('disconnect', function() {
         console.log('Client disconnected');
+        for(var i in roomList) {
+            if(roomList[i].removePlayer(client.id)) {
+                break;
+            }
+        }
+
+        winston.info(roomList);
+    });
+
+    client.on('modifyCharacter', function(data) {
+        // somewhere here modify the character the player is using
+    });
+
+    client.on('startGame', function(data) {
+        for(var i in roomList) {
+            if(roomList[i].getRoomState != RoomState.EMPTY) {
+                // var player = _.findWhere(roomList[i].players, { id: client.id });
+                
+                roomList[i].togglePlayerReady(client.id);
+
+                if(roomList[i].getAllPlayersReady()) {
+                    console.log('Start game');
+                    io.emit('statusMessage', { text: 'Fight!' });
+                    beginGame(roomList[i]);
+                }
+                else {
+                    console.log('Not all players are ready yet');
+                }
+
+                break;
+            }
+        }
     });
 });
 

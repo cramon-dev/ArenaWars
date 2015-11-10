@@ -16,7 +16,7 @@ a {
 }
 
 #inset {
-	width: 200px;
+    width: 200px;
     height: 200px;
     background-color: #fff; /* or transparent; will show through only if renderer alpha: true */
     border: 1px solid black; /* or none; */
@@ -27,3 +27,10 @@ a {
     bottom: 0px;
     z-index: 100;
 }
+
+/* Three.js menus */
+
+.enterNameForm {
+    display: inline;
+}
+

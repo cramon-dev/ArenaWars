@@ -10,6 +10,7 @@
 		<script src="../js/libs/stats.min.js"></script>
 		<script src="../js/libs/dat.gui.min.js"></script>
 		<script src="../js/libs/OrbitControls.js"></script>
+		<script src="../js/libs/gamestate.js"></script>
 		<script src="https://cdn.socket.io/socket.io-1.3.7.js"></script>
 	</head>
 	<body>
@@ -37,10 +38,12 @@
         	<div class="alert alert-danger">Your battle statistics will not be saved unless you register for an account.</div>
         <% } %>
 		<div id="container">
+			<div id="stats">
+			</div>
 			<% if (!user) { %>
-				<div>
+				<div class="enterNameForm">
 		        	<input type="text" id="usernameEntry" name="username" placeholder="Username" />
-		        	<button onclick="init(usernameEntry)" /> Play
+		        	<button onclick="initGame(usernameEntry)" /> Play
 		        </div>
 	        <% } %>
 		<div id="inset">
