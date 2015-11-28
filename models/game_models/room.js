@@ -51,7 +51,14 @@ Room.prototype = {
 	togglePlayerReady: function(id) {
 		for(var i in this.players) {
 			if(this.players[i].id == id) {
-				this.players[i].ready = !this.players[i].ready;
+				if(this.players[i].ready) {
+					console.log('make a new variable for this player');
+					this.players[i].ready = true;
+				}
+				else {
+					this.players[i].ready = !this.players[i].ready;
+				}
+
 				console.log(this.players[i]);
 			}
 		}
@@ -70,6 +77,16 @@ Room.prototype = {
 			this.players.push(player);
 
 			this.updateRoomState();
+		}
+	},
+
+	setPlayer: function(id, player) {
+		for(var i in this.players) {
+			if(this.players[i].id == id) {
+				this.players[i] = player;
+				this.players[i].id = id;
+				// this.players[i].username = username;
+			}
 		}
 	},
 
@@ -106,6 +123,10 @@ Room.prototype = {
 
 	updateGameState: function(newGameState) {
 		this.gameState = newGameState;
+	},
+
+	removeHealth: function(index, health) {
+		this.players[index].health -= health;
 	}
 }
 

@@ -25,6 +25,7 @@ var Buff = require('./models/game_models/buff.js');
 var Debuff = require('./models/game_models/debuff.js');
 var Weapon = require('./models/game_models/weapon.js');
 var Skill = require('./models/game_models/skill.js');
+var refreshRate = 1000;
 var io = require('socket.io').listen(server);
 server.listen(80);
 var roomList = [ new Room(), new Room(), new Room() ];
@@ -99,11 +100,32 @@ winston.info(roomList);
 
 // Game handlers
 
+function gameOver(players) {
+    var gameOver = false;
+
+    for(var i in players) {
+        console.log('Player health: ' + players[i].getHealth());
+        if(players[i].getHealth() <= 0) {
+            gameOver = true;
+        }
+    }
+
+    return gameOver;
+}
+
 function beginGame(room) {
     room.startGame();
-    setInterval(function() {
+    io.emit('startGame');
+    var gameLoop = setInterval(function() {
         io.emit('updateClient', { text: 'update' });
-    }, 1000);
+        
+        if(gameOver(room.getPlayers())) {
+            clearInterval(this);
+            console.log('GAME OVER');
+            room.updateGameState(GameState.GAME_OVER);
+            io.emit('gameOver', { text: 'Game over' });
+        }
+    }, refreshRate);
 }
 
 io.on('connection', function(client) {
@@ -173,12 +195,20 @@ io.on('connection', function(client) {
             if(roomList[i].getRoomState != RoomState.EMPTY) {
                 // var player = _.findWhere(roomList[i].players, { id: client.id });
                 
+                var player = new Assassin();
+                player.setWeapon1(new Weapon('Dagger'));
+                player.setWeapon2(new Weapon('Rifle'));
+                // player.setStats(30, 30, 30);
+                // player.setStats(40, 0, 50);
+                roomList[i].setPlayer(client.id, player);
+                winston.info(player.getStats());
+
                 roomList[i].togglePlayerReady(client.id);
 
                 if(roomList[i].getAllPlayersReady()) {
                     console.log('Start game');
-                    io.emit('statusMessage', { text: 'Fight!' });
-                    beginGame(roomList[i]);
+                    // io.emit('statusMessage', { text: 'Fight!' });
+                    // beginGame(roomList[i]);
                 }
                 else {
                     console.log('Not all players are ready yet');

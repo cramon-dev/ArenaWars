@@ -4,13 +4,17 @@
 	    <title>Arena Wars</title>
 	    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
 	    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+	    <link href='https://fonts.googleapis.com/css?family=Fenix' rel='stylesheet' type='text/css'>
 	    <link rel="stylesheet" type="text/css" href="../css/style.css"/>
 	    <script src="../js/libs/three.js"></script>
 	    <script src="../js/libs/physi.js"></script>
 		<script src="../js/libs/stats.min.js"></script>
 		<script src="../js/libs/dat.gui.min.js"></script>
 		<script src="../js/libs/OrbitControls.js"></script>
+		<script src="../js/libs/SkyShader.js"></script>
 		<script src="../js/libs/gamestate.js"></script>
+		<script src="../js/libs/jquery-2.1.4.min.js"></script>
+		<script src="../js/libs/bootstrap.min.js"></script>
 		<script src="https://cdn.socket.io/socket.io-1.3.7.js"></script>
 	</head>
 	<body>
@@ -32,21 +36,39 @@
 				</div>
 			</nav>
 		</header>
+		<div class="container">
+			<button onclick="resetGame()"/> Reset Game Scene
+		</div>
+		<div class="container">
+			<div class="alerts">
         <% if (user) { %>
-            <div class="alert alert-success"><%= user %></div>
+            <div class="alert alert-success">
+            	<span class="close" data-dismiss="alert" aria-label="close">&times;</span>
+            	<%= user %>
+            </div>
         <% } else { %>
-        	<div class="alert alert-danger">Your battle statistics will not be saved unless you register for an account.</div>
+        	<div class="alert alert-warning">
+        		<span class="close" data-dismiss="alert" aria-label="close">&times;</span>
+        		Your battle statistics will not be saved unless you register for an account.
+        	</div>
         <% } %>
-		<div id="container">
+        	</div>
+        </div>
+		<div id="gameContainer">
 			<div id="stats">
 			</div>
-			<% if (!user) { %>
-				<div class="enterNameForm">
-		        	<input type="text" id="usernameEntry" name="username" placeholder="Username" />
-		        	<button onclick="initGame(usernameEntry)" /> Play
-		        </div>
-	        <% } %>
-		<div id="inset">
+		</div>
+		<div class="menu mainMenu">
+			<img src="../img/logo.png"/>
+			<div class="form-group playForm">
+				<input type="text" class="form-control" id="usernameEntry" name="username" placeholder="Username" />
+				<button class="form-control btn btn-primary" onclick="initGame(usernameEntry)"/> Find Random Enemy
+			</div>
+		</div>
+		<div class="menu gameLobby">
+			<p>This is the game lobby</p>
+		</div>
 		<script src="../js/game.js"></script>
+		<script src="../js/ui.js"></script>
 	</body>
 </html>

@@ -30,7 +30,25 @@ a {
 
 /* Three.js menus */
 
+.menu {
+    font-family: 'Fenix';
+}
+
 .enterNameForm {
     display: inline;
 }
 
+.mainMenu {
+    margin: 0 auto;
+    text-align: center;
+    width: 45%;
+}
+
+.mainMenu input {
+    margin-bottom: 10px;
+}
+
+.playForm {
+    margin: 0 auto;
+    width: 75%;
+}

@@ -159,6 +159,7 @@ function isAuthorized(req, res, next) {
 	if(req.headers['authorization']) {
 		console.log('Authorized');
 		var auth = req.headers['authorization'].split(' ')[1];
+		console.log(auth);
 		var buf = new Buffer(auth, 'base64');
         var plain_auth = buf.toString(); 
         var username = plain_auth.split(':')[0];
