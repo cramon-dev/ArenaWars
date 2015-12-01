@@ -1,6 +1,6 @@
 function BaseCharacter() {
 	this.health = 5000;
-	this.movementSpeed = 65;
+	this.movementSpeed = 6;
 	this.resilience = 5;
 	this.strength = 5;
 	this.critChance = .05;
@@ -35,8 +35,8 @@ BaseCharacter.prototype = {
 	},
 
 	getStats: function() {
-		return { health: this.health, resilience: this.resilience, strength: this.strength, 
-			critChance: this.critChance, critDamage: this.critDamage };
+		return { health: this.health, movementSpeed: this.movementSpeed, resilience: this.resilience,
+			strength: this.strength, critChance: this.critChance, critDamage: this.critDamage };
 	},
 
 	setStats: function(strength, vitality, finesse) {

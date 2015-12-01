@@ -14,6 +14,7 @@ var app = express();
 
 // Game dependencies
 var http = require('http');
+var request = require('request');
 var server = http.createServer(app);
 var Room = require('./models/game_models/room.js');
 var RoomState = require('./models/game_models/roomstate.js');
@@ -96,45 +97,104 @@ app.use(function(err, req, res, next) {
 });
 
 
-winston.info(roomList);
-
-// Game handlers
-
-function gameOver(players) {
-    var gameOver = false;
-
-    for(var i in players) {
-        console.log('Player health: ' + players[i].getHealth());
-        if(players[i].getHealth() <= 0) {
-            gameOver = true;
-        }
-    }
-
-    return gameOver;
-}
-
-function beginGame(room) {
-    room.startGame();
-    io.emit('startGame');
-    var gameLoop = setInterval(function() {
-        io.emit('updateClient', { text: 'update' });
-        
-        if(gameOver(room.getPlayers())) {
-            clearInterval(this);
-            console.log('GAME OVER');
-            room.updateGameState(GameState.GAME_OVER);
-            io.emit('gameOver', { text: 'Game over' });
-        }
-    }, refreshRate);
-}
+// Game logic
 
 io.on('connection', function(client) {
     console.log('Client connected to server');
-
     winston.info(roomList);
+    io.to(client.id).emit('setClientId', { id: client.id });
+    // socket.emit('setClientId', {})
 
-    // var room = new Room({ id: 1001 }, { id: 1002 });
-    // winston.info(room);
+    // Game handlers
+
+    function gameOver(players) {
+        var winner = null;
+        var loser = null;
+
+        if(players[0].health <= 0) {
+            winner = players[1];
+            loser = players[0];
+        }
+
+        if(players[1].health <= 0) {
+            winner = players[0];
+            loser = players[1];
+        }
+
+        console.log('Player 1 health: ' + players[0].health);
+        console.log('Player 2 health: ' + players[1].health);
+        // for(var i in players) {
+        //     console.log('Player health: ' + players[i].getHealth());
+        //     if(players[i].getHealth() <= 0) {
+        //         gameOver = true;
+        //     }
+        // }
+
+        if(winner) {
+            return { gameOver: true, winner: winner, loser: loser };
+        }
+        else {
+            return { gameOver: false };
+        }
+    }
+
+    function beginGame(room) {
+        room.startGame();
+        var players = room.getPlayers();
+        io.emit('startGame', { player1: players[0], player2: players[1] });
+        winston.info(players[0]);
+
+        // var gameLoop = setInterval(function() {
+        //     io.emit('updateClient', { player1: players[0], player2: players[0] });
+
+        //     // room.removeHealth(0, 1000);
+            
+        //     var results = gameOver(players);
+        //     if(results.gameOver) {
+        //         clearInterval(this);
+
+        //         updateStats(results);
+
+        //         console.log('GAME OVER');
+        //         room.updateGameState(GameState.GAME_OVER);
+        //         io.emit('gameOver', { text: 'Game over' });
+        //     }
+        // }, refreshRate);
+    }
+
+    function updateStats(results) {
+        winston.info(results);
+
+        var winnerBody = {
+            kills: 1,
+            deaths: 0,
+            battleWon: true
+        };
+
+        var loserBody = {
+            kills: 0,
+            deaths: 1,
+            battleWon: false
+        };
+
+        var winnerUrl = 'http://localhost:3000/api/stats/' + results.winner.username;
+        var loserUrl = 'http://localhost:3000/api/stats/' + results.loser.username;
+
+        request(winnerUrl, {
+            method: 'PUT',
+            headers: { 'Authorization': 'Basic YWRtaW4xOjIwMDdkMWY3NWE5YzEwYzFkYTcwYjFiNTQ3NmVmMjhjZWNhNDk5YjA2N2M4MmM2OQ==', 'Content-Type': 'application/json' },
+            json: winnerBody
+        });
+
+        request(loserUrl, {
+            method: 'PUT',
+            headers: { 'Authorization': 'Basic YWRtaW4xOjIwMDdkMWY3NWE5YzEwYzFkYTcwYjFiNTQ3NmVmMjhjZWNhNDk5YjA2N2M4MmM2OQ==', 'Content-Type': 'application/json' },
+            json: loserBody
+        });
+    }
+
+
+    // Socket.IO event listeners
 
     client.on('searchForMatch', function(username) {
         // var allRoomsFull = true;
@@ -172,6 +232,9 @@ io.on('connection', function(client) {
 
     client.on('playerUseSkill', function(data) {
         console.log('Player used skill');
+        if(data.enemyHit) {
+            console.log('Player hit enemy ' + data.enemy);
+        }
         winston.info(data);
     });
 
@@ -208,7 +271,7 @@ io.on('connection', function(client) {
                 if(roomList[i].getAllPlayersReady()) {
                     console.log('Start game');
                     // io.emit('statusMessage', { text: 'Fight!' });
-                    // beginGame(roomList[i]);
+                    beginGame(roomList[i]);
                 }
                 else {
                     console.log('Not all players are ready yet');

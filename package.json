@@ -28,7 +28,7 @@
     "underscore": "1.8.3",
     "util": "0.10.3",
     "uuid-js": "0.7.5",
-    "winston": "~2.0.0",
+    "winston": "~2.0.0"
   },
   "devDependencies": {
     "should": "^7.1.0"

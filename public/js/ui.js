@@ -17,8 +17,4 @@ $(document).ready(function() {
 	window.hideLobby = function() {
 		$('.gameLobby').hide();
 	};
-
-	// $("#closeAlert").click(function() {  
-	//     $(".alerts").hide();
-	// });
 });

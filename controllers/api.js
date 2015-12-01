@@ -56,6 +56,11 @@ router.put('/stats/:username', isAuthorized, function(req, res, next) {
 		.waterfall([
 			function(done) {
 				dbManager.getUser(req.params.username, function(err, user) {
+					if(!user) {
+						var message = 'User with username "' + req.params.username + '" was not found';
+						return done({ message: message }, null);
+					}
+
 					done(err, user);
 				});
 			},
@@ -159,7 +164,7 @@ function isAuthorized(req, res, next) {
 	if(req.headers['authorization']) {
 		console.log('Authorized');
 		var auth = req.headers['authorization'].split(' ')[1];
-		console.log(auth);
+		// console.log(auth);
 		var buf = new Buffer(auth, 'base64');
         var plain_auth = buf.toString(); 
         var username = plain_auth.split(':')[0];

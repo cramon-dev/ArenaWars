@@ -12,7 +12,9 @@ var Room = function Room() {
 	if(arguments.length > 0) {
 		console.log(arguments);
 		for(var i in arguments) {
-			this.players.push(arguments[i]);
+			if(this.players.length < 2) {
+				this.players.push(arguments[i]);
+			}
 		}
 
 		this.updateRoomState();
@@ -101,13 +103,16 @@ Room.prototype = {
 		return true;
 	},
 
+	removeAllPlayers: function() {
+		this.players = [];
+		this.roomState = RoomState.EMPTY;
+	},
+
 	startGame: function() {
 		this.gameState = GameState.GAME_IN_PROGRESS;
 	},
 
 	updateRoomState: function() {
-		console.log('Old room state: ' + this.roomState);
-
 		if(this.players.length == 0) {
 			this.roomState = RoomState.EMPTY;
 		}
@@ -117,8 +122,6 @@ Room.prototype = {
 		else if(this.players.length == 2) {
 			this.roomState = RoomState.FULL;
 		}
-
-		console.log('New room state: ' + this.roomState);
 	},
 
 	updateGameState: function(newGameState) {
@@ -127,6 +130,10 @@ Room.prototype = {
 
 	removeHealth: function(index, health) {
 		this.players[index].health -= health;
+	},
+
+	resetGameState: function() {
+		this.gameState = GameState.IN_GAME_LOBBY;
 	}
 }
 

@@ -28,6 +28,12 @@ a {
     z-index: 100;
 }
 
+div .jumbotron {
+    font-size: 6px;
+    position: relative;
+    top: 80px;
+}
+
 /* Three.js menus */
 
 .menu {

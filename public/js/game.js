@@ -1,7 +1,6 @@
 var scene, socket, camera, renderer, controls, container, 
-        username, gameState, clock, stats, mouseX, mouseY,
-            isWalking, walkAnim, hudContainer, hudCamera, hudScene,
-                enemy;
+        username, playerStats, clientId, enemy, enemyName, gameState, clock, stats, 
+            mouseX, mouseY, isWalking, walkAnim, hudContainer, hudCamera, hudScene;
 var WIDTH = 1280;
 var HEIGHT = 720;
 var AXIS_CAM_DISTANCE = 300;
@@ -14,9 +13,10 @@ Physijs.scripts.ammo = '../libs/ammo.js';
 
 
 window.resetGame = function() {
-    scene = null;
-    renderer = null;
-    camera = null;
+    // scene = null;
+    // renderer = null;
+    // camera = null;
+    document.getElementById('gameContainer').innerHtml = null;
     console.log('resetting scene..');
 }
 
@@ -45,6 +45,7 @@ function initGame(name) {
     clock = new THREE.Clock();
     socket = io.connect('/');
     socket.on('statusMessage', updateStatusMessage);
+    socket.on('setClientId', setClientId);
     socket.on('updateClient', updateGameClient);
     socket.on('gameOver', gameOver);
     socket.on('startGame', startGame);
@@ -52,10 +53,10 @@ function initGame(name) {
 	scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -50, 0));
 
-	camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 0.1, 2000);
+	camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 0.1, 4000);
 	camera.position.x = -200;
 	camera.position.y = 200;
-	camera.position.z = 50;
+	camera.position.z = 350;
 	camera.lookAt(scene.position);
 
 	renderer = new THREE.WebGLRenderer();
@@ -155,7 +156,7 @@ function createHud() {
 function addSky() {
     var imagePrefix = "../js/assets/textures/skybox/skyrender000";
     var imageSuffix = ".png";
-    var skyGeometry = new THREE.CubeGeometry(1750, 1750, 1750); // Set this to just below the camera's draw distance
+    var skyGeometry = new THREE.CubeGeometry(3750, 3750, 3750); // Set this to just below the camera's draw distance
 
     var materialArray = [];
     for (var i = 0; i < 6; i++) {
@@ -232,17 +233,104 @@ function addPlayerAndTerrain() {
         // animation.play();
 
         mesh.scale.set(7, 7, 7);
-        mesh.position.y = 0;
+        mesh.position.y = 75;
+        mesh.position.z = -350;
         mesh.name = 'player';
         scene.add(mesh);
 
         mesh.addEventListener('collision', boxCollision);
 
-        socket.emit('searchForMatch', username);
+        var terrainTexture = new THREE.MeshLambertMaterial({
+            map: THREE.ImageUtils.loadTexture('../js/assets/textures/terrainv3_final.png'),  // specify and load the texture
+            colorAmbient: [0.480000026226044, 0.480000026226044, 0.480000026226044],
+            colorDiffuse: [0.480000026226044, 0.480000026226044, 0.480000026226044],
+            colorSpecular: [0.8999999761581421, 0.8999999761581421, 0.8999999761581421]
+        });
+
+        // var terrainTexture = new THREE.MeshLambertMaterial({ color: 0xCDCDCD });
+
+        var loader = new THREE.JSONLoader();
+        loader.load("../js/assets/models/terrainv3.json", function(geometry) {
+            // // Physics objects
+            // var boxMaterial = Physijs.createMaterial(
+            //     new THREE.MeshNormalMaterial(),
+            //     0, // Friction
+            //     0 // Restitution/bounciness
+            // );
+
+            // box = new Physijs.BoxMesh(
+            //     new THREE.CubeGeometry(15, 15, 15),
+            //     boxMaterial
+            // );
+
+            // box.name = 'player';
+            // box.position.y = 200;
+            // box.position.x = -150;
+            // box.rotation.z = 90;
+            // box.rotation.y = 50;
+            // scene.add(box);
+
+            // var box2Material = Physijs.createMaterial(
+            //     new THREE.MeshBasicMaterial({
+            //         color: 0xAF0000
+            //     }),
+            //     0,
+            //     0
+            // );
+
+            // box2 = new Physijs.BoxMesh(
+            //     new THREE.CubeGeometry(15, 15, 15),
+            //     box2Material
+            // );
+
+            // box2.name = 'evilbox';
+            // box2.position.y = 40;
+            // box2.position.x = 10
+            // box2.rotation.z = 90;
+            // box2.rotation.y = 50;
+            // scene.add(box2);
+
+            // Add ground
+            var ground = new Physijs.BoxMesh(
+                geometry,
+                terrainTexture,
+                0
+            );
+
+            ground.position.y = -25;
+            ground.name = 'ground';
+            ground.scale.x = 750;
+            ground.scale.y = 750;
+            ground.scale.z = 750;
+            ground.position.y = -700;
+            scene.add(ground);
+
+            // var ground;// = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
+
+            // ground = new Physijs.BoxMesh(
+            //     new THREE.CubeGeometry(150, 5, 150),
+            //     new THREE.MeshBasicMaterial(),
+            //     0
+            // );
+
+            // ground.name = 'ground';
+            // ground.position.y = -25;
+            // scene.add(ground);
+
+            // box.addEventListener('collision', boxCollision);
+
+            socket.emit('searchForMatch', username);
+
+            // gameState = GameState.GAME_IN_PROGRESS; // change game state to game in progress 
+
+            animate();
+        }, "../js/assets/textures/terrainv3_final.png");
+
+        // socket.emit('searchForMatch', username);
+        // animate();
 
         // gameState = GameState.GAME_IN_PROGRESS; // change game state to game in progress 
 
-        animate();
         // render();
     });
 
@@ -265,92 +353,6 @@ function addPlayerAndTerrain() {
     // box.rotation.y = 50;
     // scene.add(box);
 
-    // var terrainTexture = new THREE.MeshLambertMaterial({
-    //     map: THREE.ImageUtils.loadTexture('../js/assets/textures/terrain.png'),  // specify and load the texture
-    //     colorAmbient: [0.480000026226044, 0.480000026226044, 0.480000026226044],
-    //     colorDiffuse: [0.480000026226044, 0.480000026226044, 0.480000026226044],
-    //     colorSpecular: [0.8999999761581421, 0.8999999761581421, 0.8999999761581421]
-    // });
-
-    // var terrainTexture = new THREE.MeshLambertMaterial({ color: 0xCDCDCD });
-
-    // var loader = new THREE.JSONLoader();
-    // loader.load("../js/assets/models/terrain.json", function(geometry) {
-    //     // Physics objects
-    //     var boxMaterial = Physijs.createMaterial(
-    //         new THREE.MeshNormalMaterial(),
-    //         0, // Friction
-    //         0 // Restitution/bounciness
-    //     );
-
-    //     box = new Physijs.BoxMesh(
-    //         new THREE.CubeGeometry(15, 15, 15),
-    //         boxMaterial
-    //     );
-
-    //     box.name = 'player';
-    //     box.position.y = 200;
-    //     box.position.x = -150;
-    //     box.rotation.z = 90;
-    //     box.rotation.y = 50;
-    //     scene.add(box);
-
-    //     var box2Material = Physijs.createMaterial(
-    //         new THREE.MeshBasicMaterial({
-    //             color: 0xAF0000
-    //         }),
-    //         0,
-    //         0
-    //     );
-
-    //     box2 = new Physijs.BoxMesh(
-    //         new THREE.CubeGeometry(15, 15, 15),
-    //         box2Material
-    //     );
-
-    //     box2.name = 'evilbox';
-    //     box2.position.y = 40;
-    //     box2.position.x = 10
-    //     box2.rotation.z = 90;
-    //     box2.rotation.y = 50;
-    //     // scene.add(box2);
-
-    //     // Add ground
-    //     var ground = new Physijs.BoxMesh(
-    //         geometry,
-    //         terrainTexture,
-    //         0
-    //     );
-
-    //     ground.position.y = -25;
-    //     ground.name = 'ground';
-    //     ground.scale.x = 250;
-    //     ground.scale.y = 250;
-    //     ground.scale.z = 250;
-    //     ground.position.y = -200;
-    //     scene.add(ground);
-
-    //     // var ground;// = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
-
-    //     // ground = new Physijs.BoxMesh(
-    //     //     new THREE.CubeGeometry(150, 5, 150),
-    //     //     new THREE.MeshBasicMaterial(),
-    //     //     0
-    //     // );
-
-    //     // ground.name = 'ground';
-    //     // ground.position.y = -25;
-    //     // scene.add(ground);
-
-    //     box.addEventListener('collision', boxCollision);
-
-    //     socket.emit('searchForMatch', username);
-
-    //     gameState = GameState.GAME_IN_PROGRESS; // change game state to game in progress 
-
-    //     animate();
-    // }, "../js/assets/textures/texturev1.png");
-
 
     // box.addEventListener('collision', boxCollision);
 
@@ -364,6 +366,7 @@ function addPlayerAndTerrain() {
 function boxCollision(otherObj, relativeVelocity, relativeRotation, contactNormal) {
     if(otherObj.name == 'ground') {
         console.log('Ground collision');
+        otherObj
     }
     else if(otherObj.name == 'evilbox') {
         console.log('An evil box!');
@@ -448,6 +451,11 @@ function updateGameClient(data) {
     console.log(data);
 }
 
+function setClientId(data) {
+    console.log('My client id: ' + data.id);
+    clientId = data.id;
+}
+
 function gameOver(data) {
     var text2 = document.createElement('div');
     text2.style.position = 'absolute';
@@ -459,8 +467,18 @@ function gameOver(data) {
     document.body.appendChild(text2);
 }
 
-function startGame() {
+function startGame(data) {
     gameState = GameState.GAME_IN_PROGRESS;
+    if(clientId == data.player1.id) {
+        console.log('I am player 1');
+        playerStats = data.player1;
+    }
+    else {
+        console.log('I am player 2');
+        playerStats = data.player2;
+    }
+    console.log(data);
+    console.log(playerStats);
     console.log('start game');
 }
 
@@ -486,29 +504,31 @@ function detectMovement(delta) {
         // W - Move forward
         isWalking = !isWalking;
         player.__dirtyPosition = true;
-        player.position.x += 1;
+        console.log(playerStats.movementSpeed);
+        player.position.x += playerStats.movementSpeed;
     }
     
     if (keyState[83]) {
         // S - Move backward
         player.__dirtyPosition = true;
-        player.position.x -= 0.75;
+        player.position.x -= (playerStats.movementSpeed / 3);
     }
 
     if(keyState[81]) {
         // Q - Strafe left
         player.__dirtyPosition = true;
-        player.position.z -= 0.85;
+        player.position.z -= (playerStats.movementSpeed / 2);
     }
 
     if(keyState[69]) {
         // E - Strafe right
         player.__dirtyPosition = true;
-        player.position.z += 0.85;
+        player.position.z += (playerStats.movementSpeed / 2);
     }
 
 
     if(isWalking) {
+        console.log('Is walking');
         walkAnim.play();
     }
     else {
@@ -597,7 +617,7 @@ function detectSkillUse() {
 
 
     if(skillUsed) {
-        socket.emit('playerUseSkill', { skill: skillUsed });
+        socket.emit('playerUseSkill', { player: username, enemy: enemyName, skill: skillUsed, hitEnemy: true });
     }
 }
 
