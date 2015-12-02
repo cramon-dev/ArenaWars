@@ -1,7 +1,10 @@
 var scene, socket, camera, renderer, controls, container, 
-        username, playerStats, clientId, enemy, enemyName, gameState, clock, stats, 
+        username, playerStats, clientId, enemyMesh, enemyPos, enemyName, gameState, clock, stats, 
             mouseX, mouseY, isWalking, walkAnim, hudContainer, hudCamera, hudScene;
 var timeInterval = 0;
+var isPlayer1;
+var player1Pos = {x: 0, y: 10, z: -50};
+var player2Pos = {x: 0, y: 10, z: 70};
 var WIDTH = 1280;
 var HEIGHT = 720;
 var AXIS_CAM_DISTANCE = 300;
@@ -175,6 +178,7 @@ function addPlayerAndTerrain() {
     loader.load("../js/assets/models/human_rigged_walk_unparent.json", function (model) {
         var mat = new THREE.MeshLambertMaterial({color: 0xFFFFFF, skinning: true});
         var mesh = new THREE.SkinnedMesh(model, mat);
+        var enemyMesh = new THREE.SkinnedMesh(model, mat);
 
         walkAnim = new THREE.Animation(mesh, model.animations[0]);
         // animation.play();
@@ -182,12 +186,32 @@ function addPlayerAndTerrain() {
         // mesh.scale.set(7, 7, 7);
         // mesh.position.y = 75;
         // mesh.position.z = -350;
-        mesh.position.y = 15;
-        mesh.position.z = -50;
         // mesh.rotation.set(0, 0, 0);
         // mesh.rotateY(Math.PI);
+        if(isPlayer1) {
+            mesh.position.x = player1Pos.x;
+            mesh.position.y = player1Pos.y;
+            mesh.position.z = player1Pos.z;
+            enemyMesh.position.x = player2Pos.x;
+            enemyMesh.position.y = player2Pos.y;
+            enemyMesh.position.z = player2Pos.z;
+            enemyMesh.rotateY(Math.PI);
+        }
+        else {
+            mesh.position.x = player2Pos.x;
+            mesh.position.y = player2Pos.y;
+            mesh.position.z = player2Pos.z;
+            enemyMesh.position.x = player1Pos.x;
+            enemyMesh.position.y = player1Pos.y;
+            enemyMesh.position.z = player1Pos.z;
+            mesh.rotateY(Math.PI);
+        }
+
         mesh.name = 'player';
         scene.add(mesh);
+
+        enemyMesh.name = 'enemy';
+        scene.add(enemyMesh);
 
         camera.addTarget({
             name: 'camTarget',
@@ -281,12 +305,10 @@ function render() {
 }
 
 function gameLoop(delta, player) {
-    console.log('timeInterval: ' + timeInterval);
     timeInterval += (clock.getDelta() * 100);
 
     if(timeInterval >= 1) {
-        console.log('Update server with position');
-        socket.emit('updatePosition', { username: username, 
+        socket.emit('updatePosition', { isPlayer1: isPlayer1, username: username, 
             position: { x: player.position.x, y: player.position.y, z: player.position.z } });
         timeInterval = 0;
     }
@@ -294,7 +316,7 @@ function gameLoop(delta, player) {
     // console.log(clock.elapsedTime);
     // console.log(clock.oldTime);
 
-    drawEnemy();
+    // updateEnemy();
     detectMovement(delta);
     detectSkillUse();
     detectGameOver();
@@ -308,9 +330,9 @@ function gameLoop(delta, player) {
 
 // Game loop functions
 
-function drawEnemy() {
+// function updateEnemy() {
 
-}
+// }
 
 function detectMovement(delta) {
     var player = scene.getObjectByName('player');
@@ -392,25 +414,25 @@ function detectSkillUse() {
     
     if(keyState[52]) {
         skillUsed = 'heal';
-        if(!scene.getObjectByName('aoeTarget')) {
-            console.log('Draw aoe target cursor');
-            var material = new THREE.MeshBasicMaterial({
-                color: 0x0000ff
-            });
+        // if(!scene.getObjectByName('aoeTarget')) {
+        //     console.log('Draw aoe target cursor');
+        //     var material = new THREE.MeshBasicMaterial({
+        //         color: 0x0000ff
+        //     });
 
-            var radius = 5;
-            var segments = 32; //<-- Increase or decrease for more resolution I guess
+        //     var radius = 5;
+        //     var segments = 32; //<-- Increase or decrease for more resolution I guess
 
-            var circleGeometry = new THREE.CircleGeometry(radius, segments);              
-            var circle = new THREE.Mesh(circleGeometry, material);
-            circle.name = 'aoeTarget';
-            circle.position.x = mouseX;
-            circle.position.z = mouseY;
-            scene.add(circle);
-        }
-        else {
-            console.log(scene.getObjectByName('aoeTarget'));
-        }
+        //     var circleGeometry = new THREE.CircleGeometry(radius, segments);              
+        //     var circle = new THREE.Mesh(circleGeometry, material);
+        //     circle.name = 'aoeTarget';
+        //     circle.position.x = mouseX;
+        //     circle.position.z = mouseY;
+        //     scene.add(circle);
+        // }
+        // else {
+        //     console.log(scene.getObjectByName('aoeTarget'));
+        // }
     }
         
 
@@ -474,7 +496,18 @@ function updateStatusMessage(data) {
 }
 
 function updateGameClient(data) {
-    console.log(data);
+    // console.log(data);
+    // enemyPos = data.enemyPos;
+    var oldX = enemyMesh.position.x;
+    var oldY = enemyMesh.position.y;
+    var oldZ = enemyMesh.position.z;
+    var difX = (data.enemyPos.x - oldX);
+    var difY = (data.enemyPos.y - oldY);
+    var difZ = (data.enemyPos.z - oldZ);
+
+    enemyMesh.translateX(difX);
+    enemyMesh.translateY(difY);
+    enemyMesh.translateZ(difZ);
 }
 
 function setClientId(data) {
@@ -499,16 +532,14 @@ function gameOver(data) {
 
 function startGame(data) {
     if(clientId == data.player1.id) {
-        console.log('I am player 1');
+        isPlayer1 = true;
         playerStats = data.player1;
     }
     else {
-        console.log('I am player 2');
+        isPlayer1 = false;
         playerStats = data.player2;
     }
-    console.log(data);
-    console.log(playerStats);
-    console.log('start game');
+
     initGame();
 }
 

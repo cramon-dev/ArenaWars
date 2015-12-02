@@ -139,7 +139,8 @@ io.on('connection', function(client) {
     }
 
     function updatePlayerPosition(data) {
-        winston.info(data);
+        // how will i set player position here?
+        // data.isPlayer1 ? (player1.position = data.position) : (player2.position = data.position);
     }
 
     function beginGame(room) {
@@ -253,7 +254,7 @@ io.on('connection', function(client) {
 
     client.on('startGame', function(data) {
         client.on('updatePosition', updatePlayerPosition);
-        
+
         for(var i in roomList) {
             if(roomList[i].getRoomState != RoomState.EMPTY) {
                 // var player = _.findWhere(roomList[i].players, { id: client.id });
