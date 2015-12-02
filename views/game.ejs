@@ -2,8 +2,8 @@
 <html>
 	<head>
 	    <title>Arena Wars</title>
-	    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
-	    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+	    <link rel="stylesheet" href="../css/bootstrap.min.css">
+	    <!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css"> -->
 	    <link href='https://fonts.googleapis.com/css?family=Fenix' rel='stylesheet' type='text/css'>
 	    <link rel="stylesheet" type="text/css" href="../css/style.css"/>
 	    <link rel="stylesheet" type="text/css" href="../css/jquery-ui.min.css"/>
@@ -25,7 +25,7 @@
 			<nav class="navbar navbar-inverse">
 				<div class="container">
 					<div class="navbar-header">
-						<a class="navbar-brand">Arena Wars</a>
+						<a href="http://localhost:3000" class="navbar-brand">Arena Wars</a>
 					</div>
 					<section class="collapse navbar-collapse">
 						<ul class="nav navbar-nav">
@@ -69,14 +69,18 @@
 			</div>
 		</div>
 		<div class="menu gameLobby">
-			<div class="profSelection">
-				<select>
-					<option id="warriorSelect">Warrior</option>
-					<option id="assassinSelect">Assassin</option>
-					<option id="sorcererSelect">Sorcerer</option>
+			<div class="profSelectionSection">
+				<select id="profSelection">
+					<option>Warrior</option>
+					<option>Assassin</option>
+					<option>Sorcerer</option>
+				</select>
+				<select id="weapon1Selection">
+				</select>
+				<select id="weapon2Selection">
 				</select>
 			</div>
-			<div class="statSelection">
+			<div class="statSelectionSection">
 				<h4>Stats</h4>
 				<p>Points Left: <span id="pointsLeft"></span></p>
 				<span>Strength</span>
@@ -85,7 +89,7 @@
 			</div>
 			<div class="finalizeSection">
 				<p>Your opponent: <span id="enemyName"></span></p>
-				<button class="btn btn-success" onclick="readyToStart()" id="readyButton"/>Ready
+				<button class="btn btn-success" onclick="readyToStart({ prof: profSelection, weapon1: weapon1Selection, weapon2: weapon2Selection})" id="readyButton"/>Ready
 			</div>
 		</div>
 		<script src="../js/game.js"></script>

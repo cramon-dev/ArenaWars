@@ -138,28 +138,32 @@ io.on('connection', function(client) {
         }
     }
 
+    function updatePlayerPosition(data) {
+        winston.info(data);
+    }
+
     function beginGame(room) {
         room.startGame();
         var players = room.getPlayers();
         io.emit('startGame', { player1: players[0], player2: players[1] });
         winston.info(players[0]);
 
-        // var gameLoop = setInterval(function() {
-        //     io.emit('updateClient', { player1: players[0], player2: players[0] });
+        var gameLoop = setInterval(function() {
+            io.emit('updateClient', { player1: players[0], player2: players[0] });
 
-        //     // room.removeHealth(0, 1000);
+            // room.removeHealth(0, 1000);
             
-        //     var results = gameOver(players);
-        //     if(results.gameOver) {
-        //         clearInterval(this);
+            var results = gameOver(players);
+            if(results.gameOver) {
+                clearInterval(this);
 
-        //         updateStats(results);
+                updateStats(results);
 
-        //         console.log('GAME OVER');
-        //         room.updateGameState(GameState.GAME_OVER);
-        //         io.emit('gameOver', { text: 'Game over' });
-        //     }
-        // }, refreshRate);
+                console.log('GAME OVER');
+                room.updateGameState(GameState.GAME_OVER);
+                io.emit('gameOver', { text: 'Game over' });
+            }
+        }, refreshRate);
     }
 
     function updateStats(results) {
@@ -202,7 +206,7 @@ io.on('connection', function(client) {
             if(roomList[i].getRoomState != RoomState.FULL) {
                 roomList[i].addPlayer({ id: client.id, username: username, ready: false });
                 console.log('player joined room');
-                winston.info(roomList[i]);
+                // winston.info(roomList[i]);
                 // allRoomsFull = false;
                 break;
             }
@@ -245,26 +249,42 @@ io.on('connection', function(client) {
                 break;
             }
         }
-
-        winston.info(roomList);
-    });
-
-    client.on('modifyCharacter', function(data) {
-        // somewhere here modify the character the player is using
     });
 
     client.on('startGame', function(data) {
+        client.on('updatePosition', updatePlayerPosition);
+        
         for(var i in roomList) {
             if(roomList[i].getRoomState != RoomState.EMPTY) {
                 // var player = _.findWhere(roomList[i].players, { id: client.id });
+                var player;
+
+                switch(data.character) {
+                    case "Warrior":
+                        player = new Warrior();
+                        player.setWeapon1(new Weapon(data.weapon1));
+                        player.setWeapon2(new Weapon(data.weapon2));
+                        break;
+                    case "Assassin":
+                        player = new Assassin();
+                        player.setWeapon1(new Weapon(data.weapon1));
+                        player.setWeapon2(new Weapon(data.weapon2));
+                        break;
+                    case "Sorcerer":
+                        player = new Sorcerer();
+                        player.setWeapon(data.weapon1);
+                        break;
+                    default:
+                        player = new Warrior();
+                        player.setWeapon1(new Weapon(data.weapon1));
+                        player.setWeapon2(new Weapon(data.weapon2));
+                        break;
+                }
                 
-                var player = new Assassin();
-                player.setWeapon1(new Weapon('Dagger'));
-                player.setWeapon2(new Weapon('Rifle'));
-                // player.setStats(30, 30, 30);
-                // player.setStats(40, 0, 50);
+                player.setUsername(data.username);
+                player.setStats(data.stats.strength, data.stats.vitality, data.stats.finesse);
                 roomList[i].setPlayer(client.id, player);
-                winston.info(player.getStats());
+                winston.info(player);
 
                 roomList[i].togglePlayerReady(client.id);
 

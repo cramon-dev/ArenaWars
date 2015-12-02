@@ -3,6 +3,7 @@ var Skill = require('./skill.js');
 
 var Warrior = function Warrior() {
 	this.health = this.health * 1.2;
+	this.username = this.username;
 	this.movementSpeed = this.movementSpeed;
 	this.resilience = this.resilience;
 	this.strength = this.strength;

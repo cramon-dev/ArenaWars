@@ -1,6 +1,7 @@
 function BaseCharacter() {
 	this.health = 5000;
-	this.movementSpeed = 6;
+	this.username = null;
+	this.movementSpeed = .95;
 	this.resilience = 5;
 	this.strength = 5;
 	this.critChance = .05;
@@ -12,6 +13,14 @@ function BaseCharacter() {
 BaseCharacter.prototype = {
 	getHealth: function() {
 		return this.health;
+	},
+
+	getUsername: function() {
+		return this.username;
+	},
+
+	setUsername: function(username) {
+		this.username = username;
 	},
 
 	getMoveSpeed: function() {

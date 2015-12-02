@@ -3,6 +3,7 @@ var Skill = require('./skill.js');
 
 var Assassin = function Assassin() {
 	this.health = this.health; // Why do I need to do this every time? Quick fix
+	this.username = this.username;
 	this.movementSpeed = this.movementSpeed;
 	this.resilience = this.resilience;
 	this.strength = this.strength;

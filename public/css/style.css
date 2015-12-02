@@ -38,6 +38,8 @@ div .jumbotron {
 
 .menu {
     font-family: 'Fenix';
+    margin: 0 auto;
+    text-align: center;
 }
 
 .enterNameForm {
@@ -45,8 +47,6 @@ div .jumbotron {
 }
 
 .mainMenu {
-    margin: 0 auto;
-    text-align: center;
     width: 45%;
 }
 
@@ -57,4 +57,8 @@ div .jumbotron {
 .playForm {
     margin: 0 auto;
     width: 75%;
+}
+
+.gameLobby {
+    width: 45%;
 }
