@@ -28,10 +28,18 @@ function initMenu() {
     window.hideLobby();
 }
 
-function initLobby() {
+function initLobby(name) {
+    socket = io.connect('/');
+    socket.emit('searchForMatch', username);
+    username = (name) ? (username = name) : (username = window.username);
+
     gameState = GameState.IN_GAME_LOBBY;
     window.hideMenu();
     window.showLobby();
+}
+
+function readyToStart() {
+    socket.emit('startGame', { ready: true });
 }
 
 function initGame(name) {
@@ -40,10 +48,9 @@ function initGame(name) {
 
     setupStats();
 
-    username = name.value;
     gameState = GameState.IN_MENU;
     clock = new THREE.Clock();
-    socket = io.connect('/');
+    // socket = io.connect('/');
     socket.on('statusMessage', updateStatusMessage);
     socket.on('setClientId', setClientId);
     socket.on('updateClient', updateGameClient);
@@ -53,7 +60,7 @@ function initGame(name) {
 	scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -50, 0));
 
-	camera = new THREE.PerspectiveCamera(45, WIDTH / HEIGHT, 0.1, 4000);
+	camera = new THREE.TargetCamera(45, WIDTH / HEIGHT, 0.1, 4000);
 	camera.position.x = -200;
 	camera.position.y = 200;
 	camera.position.z = 350;
@@ -235,8 +242,24 @@ function addPlayerAndTerrain() {
         mesh.scale.set(7, 7, 7);
         mesh.position.y = 75;
         mesh.position.z = -350;
+        // mesh.rotation.set(0, 0, 0);
+        // mesh.rotateY(Math.PI);
         mesh.name = 'player';
         scene.add(mesh);
+
+        camera.addTarget({
+            name: 'camTarget',
+            targetObject: mesh,
+            cameraPosition: new THREE.Vector3(0, 30, 50),
+            fixed: false,
+            stiffness: 1,
+            matchRotation: true
+        });
+
+        camera.rotation.y = mesh.rotation.y + Math.PI;
+
+        camera.setTarget('camTarget');
+
 
         mesh.addEventListener('collision', boxCollision);
 
@@ -319,7 +342,7 @@ function addPlayerAndTerrain() {
 
             // box.addEventListener('collision', boxCollision);
 
-            socket.emit('searchForMatch', username);
+            // socket.emit('searchForMatch', username);
 
             // gameState = GameState.GAME_IN_PROGRESS; // change game state to game in progress 
 
@@ -364,9 +387,10 @@ function addPlayerAndTerrain() {
 }
 
 function boxCollision(otherObj, relativeVelocity, relativeRotation, contactNormal) {
+    console.log('collision');
+    console.log(otherObj);
     if(otherObj.name == 'ground') {
         console.log('Ground collision');
-        otherObj
     }
     else if(otherObj.name == 'evilbox') {
         console.log('An evil box!');
@@ -403,14 +427,16 @@ function animate() {
     controls.update();
 
     var player = scene.getObjectByName('player');
+    // player.translateY(-5.25);
 
-    // var relativeCameraOffset = new THREE.Vector3(0,20,30); // originally 0, 50, 100
+    // var relativeCameraOffset = new THREE.Vector3(0,5,30); // originally 0, 50, 100
     // var cameraOffset = relativeCameraOffset.applyMatrix4(player.matrixWorld);
 
     // camera.position.x = cameraOffset.x;
     // camera.position.y = cameraOffset.y;
     // camera.position.z = cameraOffset.z;
-    camera.lookAt(player.position);
+    // camera.lookAt(player.position);
+    camera.update();
 
     gameLoop(delta);
     render();
@@ -456,6 +482,10 @@ function setClientId(data) {
     clientId = data.id;
 }
 
+function lobbyJoined(data) {
+    // enemyName = data.
+}
+
 function gameOver(data) {
     var text2 = document.createElement('div');
     text2.style.position = 'absolute';
@@ -482,6 +512,7 @@ function startGame(data) {
     console.log('start game');
 }
 
+
 // Game loop functions
 
 function detectMovement(delta) {
@@ -491,13 +522,15 @@ function detectMovement(delta) {
     if (keyState[65]) {
         // A - Turn left
         player.__dirtyRotation = true;
-        player.rotation.y += (delta * 45 * Math.PI / 180);
+        // player.rotation.y += (delta * 45 * Math.PI / 180);
+        player.rotation.y += 0.45;
     }
 
     if (keyState[68]) {
         // D - Turn right
         player.__dirtyRotation = true;
-        player.rotation.y -= (delta * 45 * Math.PI / 180);
+        // player.rotation.y -= (delta * 45 * Math.PI / 180);
+        player.rotation.y -= 0.45;
     }
     
     if (keyState[87]) {
@@ -505,25 +538,29 @@ function detectMovement(delta) {
         isWalking = !isWalking;
         player.__dirtyPosition = true;
         console.log(playerStats.movementSpeed);
-        player.position.x += playerStats.movementSpeed;
+        // player.position.x += playerStats.movementSpeed;
+        player.translateZ(playerStats.movementSpeed);
     }
     
     if (keyState[83]) {
         // S - Move backward
         player.__dirtyPosition = true;
-        player.position.x -= (playerStats.movementSpeed / 3);
+        // player.position.x -= (playerStats.movementSpeed / 3);
+        player.translateZ(-(playerStats.movementSpeed / 3));
     }
 
     if(keyState[81]) {
         // Q - Strafe left
         player.__dirtyPosition = true;
-        player.position.z -= (playerStats.movementSpeed / 2);
+        // player.position.z -= (playerStats.movementSpeed / 2);
+        player.translateX(playerStats.movementSpeed / 2.5);
     }
 
     if(keyState[69]) {
         // E - Strafe right
         player.__dirtyPosition = true;
-        player.position.z += (playerStats.movementSpeed / 2);
+        // player.position.z += (playerStats.movementSpeed / 2);
+        player.translateX(-(playerStats.movementSpeed / 2.5));
     }
 
 
@@ -595,7 +632,7 @@ function detectSkillUse() {
 
     if(keyState[70]) {
         skillUsed = 'classMechanic_1';
-        socket.emit('startGame', { ready: true });
+        // socket.emit('startGame', { ready: true });
     }
 
     // These four only used by sorcerer

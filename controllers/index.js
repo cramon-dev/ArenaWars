@@ -6,13 +6,15 @@ var util = require('util');
 
 
 router.get('/', function(req, res, next) {
-	res.render('index', { title: 'Arena Wars', message: req.flash('message') });
+	if(!req.user) {
+		res.render('index', { title: 'Arena Wars', message: req.flash('message') });
+	}
+	else {
+		res.redirect('/game');
+	}
 });
 
 router.get('/home', isAuthenticated, function(req, res, next) {
-	console.log('user: ' + req.user);
-	console.log('session: ');
-	console.log(req.session.toJSON());
 	res.render('home', { user: req.user, message: req.flash('message') });
 });
 
@@ -22,6 +24,7 @@ router.get('/signout', function(req, res, next) {
 	res.redirect('/');
 });
 
+
 // Sign in routes
 
 router.get('/signin', function(req, res, next) {
@@ -29,7 +32,7 @@ router.get('/signin', function(req, res, next) {
 });
 
 router.post('/signin', passport.authenticate('local-signin', {
-    successRedirect : '/home', // redirect to the secure profile section
+    successRedirect : '/game', // redirect to the secure profile section
     failureRedirect : '/signin', // redirect back to the signup page if there is an error
     failureFlash : true // allow flash messages
 }));
