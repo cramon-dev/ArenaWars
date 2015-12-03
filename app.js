@@ -101,11 +101,48 @@ app.use(function(err, req, res, next) {
 
 io.on('connection', function(client) {
     console.log('Client connected to server');
-    winston.info(roomList);
-    io.to(client.id).emit('setClientId', { id: client.id });
+    // winston.info(roomList);
+    // var roomId;
+    // for(var i in roomList) {
+    //     for(var j in roomList[i].players) {
+    //         roomId = 
+    //     }
+    // }
+    // var room = _.findWhere(roomList, { })
+    // io.to(client.id).emit('setClientId', { clientId: client.id, roomId: roomList });
     // socket.emit('setClientId', {})
 
     // Game handlers
+
+    function updatePosition(data) {
+        console.log('Got update position');
+
+        if(data.isPlayer1) {
+            _.findWhere(roomList, { roomId: data.roomId }).getPlayers()[0].position = data.position;
+        }
+        else {
+            _.findWhere(roomList, { roomId: data.roomId }).getPlayers()[1].position = data.position;
+        }
+        // data.isPlayer1 ? (player1.position = data.position) : (player2.position = data.position);
+    }
+
+    function playerHit(data) {
+        console.log('player was hit');
+        console.log(data);
+        var room = _.findWhere(roomList, { roomId: data.roomId });
+        console.log(room);
+
+        var playerHit = _.findWhere(room.getPlayers(), { id: data.enemyId });
+        console.log('Player health before: ' + playerHit.getHealth());
+        playerHit.health -= data.damage;
+        // _.findWhere(this.players, { id: data.enemyId }).health -= data.damage;
+        console.log('Player health after: ' + playerHit.getHealth());
+    }
+
+    function skillUsed(data) {
+        console.log('skill was used');
+        console.log(data);        
+    }
 
     function gameOver(players) {
         var winner = null;
@@ -138,10 +175,10 @@ io.on('connection', function(client) {
         }
     }
 
-    function updatePlayerPosition(data) {
+    // function updatePlayerPosition(data) {
         // how will i set player position here?
         // data.isPlayer1 ? (player1.position = data.position) : (player2.position = data.position);
-    }
+    // }
 
     function beginGame(room) {
         room.startGame();
@@ -151,8 +188,6 @@ io.on('connection', function(client) {
 
         var gameLoop = setInterval(function() {
             io.emit('updateClient', { player1: players[0], player2: players[0] });
-
-            // room.removeHealth(0, 1000);
             
             var results = gameOver(players);
             if(results.gameOver) {
@@ -199,7 +234,7 @@ io.on('connection', function(client) {
     }
 
 
-    // Socket.IO event listeners
+    // Socket.IO event listeners    
 
     client.on('searchForMatch', function(username) {
         // var allRoomsFull = true;
@@ -229,20 +264,6 @@ io.on('connection', function(client) {
         // io.emit('statusMessage', { text: 'Waiting for opponent..' });
     });
 
-    client.on('playerMoved', function(data) {
-        io.emit('statusMessage', { text: 'Player moved' });
-        console.log('Player moved');
-        winston.info(data);
-    });
-
-    client.on('playerUseSkill', function(data) {
-        console.log('Player used skill');
-        if(data.enemyHit) {
-            console.log('Player hit enemy ' + data.enemy);
-        }
-        winston.info(data);
-    });
-
     client.on('disconnect', function() {
         console.log('Client disconnected');
         for(var i in roomList) {
@@ -253,7 +274,7 @@ io.on('connection', function(client) {
     });
 
     client.on('startGame', function(data) {
-        client.on('updatePosition', updatePlayerPosition);
+        client.on('updatePosition', updatePosition);
 
         for(var i in roomList) {
             if(roomList[i].getRoomState != RoomState.EMPTY) {
@@ -281,6 +302,8 @@ io.on('connection', function(client) {
                         player.setWeapon2(new Weapon(data.weapon2));
                         break;
                 }
+
+                io.to(client.id).emit('setClientId', { clientId: client.id, roomId: roomList[i].getRoomId() });
                 
                 player.setUsername(data.username);
                 player.setStats(data.stats.strength, data.stats.vitality, data.stats.finesse);
@@ -290,8 +313,10 @@ io.on('connection', function(client) {
                 roomList[i].togglePlayerReady(client.id);
 
                 if(roomList[i].getAllPlayersReady()) {
-                    console.log('Start game');
+                    client.on('skillUsed', skillUsed);
+                    client.on('playerHit', playerHit);
                     // io.emit('statusMessage', { text: 'Fight!' });
+                    // winston.info(roomList[i]);
                     beginGame(roomList[i]);
                 }
                 else {

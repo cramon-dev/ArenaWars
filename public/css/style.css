@@ -1,18 +1,18 @@
 body {
-  /*padding: 50px;*/
-  /*padding-top: 80px;*/
-  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
-  margin: 0px;
-  padding: 0px;
-  overflow: hidden;
+    /*padding: 50px;*/
+    /*padding-top: 80px;*/
+    font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+    margin: 0px;
+    padding: 0px;
+    overflow: hidden;
 }
 
 a {
-  color: #00B7FF;
+  `color: #00B7FF;
 }
 
 #container {
-	margin: 0 auto;
+	`margin: 0 auto;
 }
 
 #inset {
@@ -28,11 +28,26 @@ a {
     z-index: 100;
 }
 
-div .jumbotron {
-    font-size: 6px;
+/* Index Page */
+
+.welcomeSection {
     position: relative;
     top: 80px;
 }
+
+.welcomeSection img {
+    display: block;
+    margin: 0 auto;
+}
+
+#playArenaWars {
+    margin-bottom: 15px;
+}
+
+.signInMessage {
+    padding-top: 20px;
+}
+
 
 /* Three.js menus */
 
@@ -48,6 +63,11 @@ div .jumbotron {
 
 .mainMenu {
     width: 45%;
+    margin: 0 auto;
+}
+
+.mainMenu img {
+    display: block;
 }
 
 .mainMenu input {

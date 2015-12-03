@@ -29,7 +29,6 @@ router.get('/stats/:username', function(req, res, next) {
 });
 
 router.post('/users', function(req, res, next) {
-	console.log(req.body);
 	var newApiUser = { username: req.body.username, password: req.body.password };
 	dbManager.getApiUser(newApiUser.username, function(err, apiUser) {
 		if(err) {
@@ -99,12 +98,9 @@ router.put('/stats/:username', isAuthorized, function(req, res, next) {
 			}
 		], function(err, result) {
 			if(err) {
-				console.log('Caught error');
-				console.log(err);
 				return res.send(err);
 			}
 
-			console.log(result);
 			res.status(200);
 			return res.send(result);
 		});
@@ -160,11 +156,8 @@ router.put('/stats/:username', isAuthorized, function(req, res, next) {
 
 // Check if request has authorizations to access certain parts of the api
 function isAuthorized(req, res, next) {
-	console.log('Before it all req headers: ' + req.headers['authorization']);
 	if(req.headers['authorization']) {
-		console.log('Authorized');
 		var auth = req.headers['authorization'].split(' ')[1];
-		// console.log(auth);
 		var buf = new Buffer(auth, 'base64');
         var plain_auth = buf.toString(); 
         var username = plain_auth.split(':')[0];
@@ -192,12 +185,10 @@ function isAuthorized(req, res, next) {
         		}
         	], function(err, result) {
         		if(err) {
-        			console.log('Error while authorizing');
 	        		res.status(err.status || 500);
 	        		return res.send(err);
         		}
 
-        		console.log('No error authorizing');
         		return next();
         	});
 
@@ -219,7 +210,6 @@ function isAuthorized(req, res, next) {
         // });
 	}
 	else {
-		console.log('Not authorized');
 		res.status(403);
 		res.send('You are not authorized to use this part of the API.');
 	}

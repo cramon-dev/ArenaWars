@@ -1,10 +1,10 @@
 var scene, socket, camera, renderer, controls, container, 
-        username, playerStats, clientId, enemyMesh, enemyPos, enemyName, gameState, clock, stats, 
-            mouseX, mouseY, isWalking, walkAnim, hudContainer, hudCamera, hudScene;
+        roomId, username, playerStats, clientId, enemyPos, enemy, gameState, clock, 
+            stats, mouseX, mouseY, walkAnim, hudContainer, hudCamera, hudScene;
 var timeInterval = 0;
 var isPlayer1;
-var player1Pos = {x: 0, y: 10, z: -50};
-var player2Pos = {x: 0, y: 10, z: 70};
+var player1Pos = {x: 0, y: 25, z: -50};
+var player2Pos = {x: 0, y: 25, z: 70};
 var WIDTH = 1280;
 var HEIGHT = 720;
 var AXIS_CAM_DISTANCE = 300;
@@ -161,29 +161,24 @@ function addSky() {
 }
 
 function addPlayerAndTerrain() {
-    var ground;// = new THREE.Mesh(geometry, new THREE.MeshNormalMaterial());
-
-    ground = new Physijs.BoxMesh(
-        new THREE.CubeGeometry(850, 4, 850),
-        new THREE.MeshBasicMaterial(),
-        0
-    );
-
-    ground.name = 'ground';
-    ground.position.y = -25;
-    ground.position.x = -150;
-    scene.add(ground);
-
     var loader = new THREE.JSONLoader();
-    loader.load("../js/assets/models/human_rigged_walk_unparent.json", function (model) {
-        var mat = new THREE.MeshLambertMaterial({color: 0xFFFFFF, skinning: true});
-        var mesh = new THREE.SkinnedMesh(model, mat);
-        var enemyMesh = new THREE.SkinnedMesh(model, mat);
+    loader.load("../js/assets/models/human.json", function (model) {
+        // var mat = new THREE.MeshLambertMaterial({color: 0xFFFFFF, skinning: true});
+        var mat = Physijs.createMaterial(
+            new THREE.MeshLambertMaterial({color: 0xFFFFFF}),
+            0,
+            0
+        );
+        // var mesh = new THREE.SkinnedMesh(model, mat);
+        // var enemyMesh = new THREE.SkinnedMesh(model, mat);
+        var mesh = new Physijs.BoxMesh(model, mat);
+        var enemyMesh = new Physijs.BoxMesh(model, mat);
 
-        walkAnim = new THREE.Animation(mesh, model.animations[0]);
+        // walkAnim = new THREE.Animation(mesh, model.animations[0]);
         // animation.play();
 
-        // mesh.scale.set(7, 7, 7);
+        mesh.scale.set(0.5, 0.5, 0.5);
+        enemyMesh.scale.set(0.5, 0.5, 0.5);
         // mesh.position.y = 75;
         // mesh.position.z = -350;
         // mesh.rotation.set(0, 0, 0);
@@ -217,7 +212,7 @@ function addPlayerAndTerrain() {
             name: 'camTarget',
             targetObject: mesh,
             // cameraPosition: new THREE.Vector3(0, 30, 50),
-            cameraPosition: new THREE.Vector3(0, 5, 10),
+            cameraPosition: new THREE.Vector3(0, -5, 25),
             fixed: false,
             stiffness: 1,
             matchRotation: true
@@ -244,10 +239,22 @@ function addPlayerAndTerrain() {
                 0
             );
 
+            var walkableGround = new Physijs.BoxMesh(
+                new THREE.CubeGeometry(1550, 4, 1550),
+                new THREE.MeshLambertMaterial({ color: 0xFFFFFF }),
+                0
+            );
+
+            walkableGround.name = 'ground';
+            walkableGround.visible = false;
+            walkableGround.position.y = 8;
+            // walkableGround.position.x = -150;
+            scene.add(walkableGround);
+
             ground.name = 'ground';
-            ground.scale.x = 107;
-            ground.scale.y = 107;
-            ground.scale.z = 107;
+            ground.scale.x = 110;
+            ground.scale.y = 110;
+            ground.scale.z = 110;
             ground.position.y = -100;
             scene.add(ground);
             animate();
@@ -308,7 +315,7 @@ function gameLoop(delta, player) {
     timeInterval += (clock.getDelta() * 100);
 
     if(timeInterval >= 1) {
-        socket.emit('updatePosition', { isPlayer1: isPlayer1, username: username, 
+        socket.emit('updatePosition', { roomId: roomId, isPlayer1: isPlayer1, username: username, 
             position: { x: player.position.x, y: player.position.y, z: player.position.z } });
         timeInterval = 0;
     }
@@ -317,9 +324,9 @@ function gameLoop(delta, player) {
     // console.log(clock.oldTime);
 
     // updateEnemy();
+    // detectWeaponCollision();
     detectMovement(delta);
     detectSkillUse();
-    detectGameOver();
 
     // // Disable controls until player finishes typing in text box?
     // if(keyState[89]) {
@@ -336,7 +343,7 @@ function gameLoop(delta, player) {
 
 function detectMovement(delta) {
     var player = scene.getObjectByName('player');
-    var oldPosition = { position: player.position, rotation: player.rotation };
+    // var oldPosition = { position: player.position, rotation: player.rotation };
     
     if (keyState[65]) {
         // A - Turn left
@@ -352,9 +359,8 @@ function detectMovement(delta) {
     
     if (keyState[87]) {
         // W - Move forward
-        isWalking = !isWalking;
+        // isWalking = !isWalking;
         player.__dirtyPosition = true;
-        console.log(playerStats.movementSpeed);
         player.translateZ(playerStats.movementSpeed);
     }
     
@@ -377,22 +383,25 @@ function detectMovement(delta) {
     }
 
 
-    if(isWalking) {
-        console.log('Is walking');
-        walkAnim.play();
-    }
-    else {
-        isWalking = !isWalking;
-        walkAnim.stop();
-    }
+    // if(isWalking) {
+    //     walkAnim.play();
+    // }
+    // else {
+    //     isWalking = !isWalking;
+    //     walkAnim.stop();
+    // }
 
-    var newPosition = { position: player.position, rotation: player.rotation };
+    // var newPosition = { position: player.position, rotation: player.rotation };
 
-    if(oldPosition.position != newPosition.position || oldPosition.rotation != newPosition.rotation) {
-        console.log('Player moved');
-        socket.emit('playerMoved', { oldPosition: oldPosition, newPosition: newPosition });
-    }
+    // if(oldPosition.position != newPosition.position || oldPosition.rotation != newPosition.rotation) {
+    //     console.log('Player moved');
+    //     socket.emit('playerMoved', { oldPosition: oldPosition, newPosition: newPosition });
+    // }
 }
+
+// function detectWeaponCollision() {
+//     // socket.emit('playerHit', { roomId: roomId, enemyId: enemy.id, username: enemy.username, damage: 100 });
+// }
 
 function detectSkillUse() {
     var player = scene.getObjectByName('player'); // Make player invisible for testing purposes
@@ -467,12 +476,14 @@ function detectSkillUse() {
 
 
     if(skillUsed) {
-        socket.emit('playerUseSkill', { player: username, enemy: enemyName, skill: skillUsed, hitEnemy: true });
+        console.log('skill used');
+        // if weapon collision detected, emit player hit
+        socket.emit('playerHit', { roomId: roomId, enemyId: enemy.id, username: enemy.username, damage: 1000 });
+        // console.log('skill used');
+        // socket.emit('playerHit', { roomId: roomId, enemyId: enemy.id, username: enemy.username, damage: 100 });
+        // socket.emit('playerUseSkill', { player: username, enemy: enemyName, skill: skillUsed, hitEnemy: true });
+        skillUsed = null;
     }
-}
-
-function detectGameOver() {
-    // if player health hits 0, game over
 }
 
 function detectMouseMovement(event) {
@@ -496,23 +507,36 @@ function updateStatusMessage(data) {
 }
 
 function updateGameClient(data) {
-    // console.log(data);
-    // enemyPos = data.enemyPos;
-    var oldX = enemyMesh.position.x;
-    var oldY = enemyMesh.position.y;
-    var oldZ = enemyMesh.position.z;
-    var difX = (data.enemyPos.x - oldX);
-    var difY = (data.enemyPos.y - oldY);
-    var difZ = (data.enemyPos.z - oldZ);
+    var enemy = scene.getObjectByName('enemy');
+    var position = new THREE.Vector3();
+    position.getPositionFromMatrix(enemy.matrixWorld);
 
-    enemyMesh.translateX(difX);
-    enemyMesh.translateY(difY);
-    enemyMesh.translateZ(difZ);
+    var oldX = position.x;
+    var oldY = position.y;
+    var oldZ = position.z;
+    var difX, difY, difZ;
+
+    if(isPlayer1) {
+        difX = (data.player2.position.x - oldX);
+        difY = (data.player2.position.y - oldY);
+        difZ = (data.player2.position.z - oldZ); 
+    }
+    else {
+        difX = (data.player1.position.x - oldX);
+        difY = (data.player1.position.y - oldY);
+        difZ = (data.player1.position.z - oldZ);
+    }
+
+    enemy.translateX(difX);
+    enemy.translateY(difY);
+    enemy.translateZ(difZ);
 }
 
 function setClientId(data) {
-    console.log('My client id: ' + data.id);
-    clientId = data.id;
+    console.log('My client id: ' + data.clientId);
+    console.log('My room id: ' + data.roomId);
+    clientId = data.clientId;
+    roomId = data.roomId;
 }
 
 function lobbyJoined(data) {
@@ -521,12 +545,15 @@ function lobbyJoined(data) {
 
 function gameOver(data) {
     var text2 = document.createElement('div');
-    text2.style.position = 'absolute';
+    // text2.style.position = 'absolute';
+    text2.style.position = 'relative';
+    text2.style.left = '50%';
+    text2.style += 'text-align: center;';
     text2.style.fontSize = '48';
     text2.style.color = 'red';
     text2.innerHTML = data.text;
-    text2.style.top = 300 + 'px';
-    text2.style.left = 300 + 'px';
+    // text2.style.top = 300 + 'px';
+    // text2.style.left = 300 + 'px';
     document.body.appendChild(text2);
 }
 
@@ -534,10 +561,12 @@ function startGame(data) {
     if(clientId == data.player1.id) {
         isPlayer1 = true;
         playerStats = data.player1;
+        enemy = { id: data.player2.id, username: data.player2.username };
     }
     else {
         isPlayer1 = false;
         playerStats = data.player2;
+        enemy = { id: data.player1.id, username: data.player1.username };
     }
 
     initGame();

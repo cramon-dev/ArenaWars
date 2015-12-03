@@ -1,6 +1,7 @@
 var uuid = require('node-uuid');
 var RoomState = require('./roomstate.js');
 var GameState = require('./gamestate.js');
+var _ = require('underscore');
 
 var Room = function Room() {
 	this.roomId = uuid.v4();
@@ -128,13 +129,23 @@ Room.prototype = {
 		this.gameState = newGameState;
 	},
 
-	removeHealth: function(index, health) {
-		this.players[index].health -= health;
-	},
+	// removeHealth: function(index, health) {
+	// 	this.players[index].health -= health;
+	// },
 
 	resetGameState: function() {
 		this.gameState = GameState.IN_GAME_LOBBY;
 	}
+
+	// onPlayerHit: function(data) {
+	// 	console.log('player hit');
+	// 	console.log(data);
+	// 	console.log(this.players);
+	// 	var playerHit = _.findWhere(this.players, { id: data.enemyId });
+	// 	console.log(playerHit);
+	// 	_.findWhere(this.players, { id: data.enemyId }).health -= data.damage;
+	// 	console.log(playerHit);
+	// }
 }
 
 module.exports = Room;

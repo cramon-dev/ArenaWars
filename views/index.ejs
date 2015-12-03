@@ -2,20 +2,20 @@
 <html>
 <head>
     <title><%= title %></title>
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css">
+    <link rel="stylesheet" href="../css/style.css"/>
 </head>
 <body>
 <div class="container">
-    <div class="jumbotron text-center">
-        <h1><%= title %></h1>
-
-        <a href="/game" class="btn btn-primary">Play Arena Wars</a>
-
-        <p>Sign in or Register</p>
-
-        <a href="/signin" class="btn btn-default"><span class="fa fa-user"></span> Sign In</a>
-        <a href="/register" class="btn btn-default"><span class="fa fa-user"></span> Register</a>
+    <div class="welcomeSection">
+        <div class="jumbotron text-center">
+            <img src="../img/logo.png"/>
+            <a id="playArenaWars" href="/game" class="btn btn-primary">Play Arena Wars</a>
+            <p class="signInMessage">Sign in or Register</p>
+            <a href="/signin" class="btn btn-default"><span class="fa fa-user"></span> Sign In</a>
+            <a href="/register" class="btn btn-default"><span class="fa fa-user"></span> Register</a>
+        </div>
     </div>
 </div>
 </body>
