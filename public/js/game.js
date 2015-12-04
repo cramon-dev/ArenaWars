@@ -33,10 +33,17 @@ function initMenu() {
 }
 
 function initLobby(name) {
-    socket = io.connect('/');
-    socket.on('setClientId', setClientId);
-    socket.on('startGame', startGame);
+    if(!socket) {
+        socket = io.connect('/');
+        socket.on('setClientId', setClientId);
+        socket.on('startGame', startGame);
+        socket.on('statusMessage', updateStatusMessage);
+        socket.on('updateClient', updateGameClient);
+        socket.on('gameOver', gameOver);
+    }
+
     username = (name) ? (username = name) : (username = window.username);
+    window.username = username;
     socket.emit('searchForMatch', username);
 
     gameState = GameState.IN_GAME_LOBBY;
@@ -45,8 +52,11 @@ function initLobby(name) {
 }
 
 function readyToStart(data) {
-    socket.emit('startGame', { ready: true, username: username,
-        character: data.prof.value, stats: { strength: 40, vitality: 40, finesse: 40 }, 
+    var strength = parseInt(data.stats.strength.innerHTML);
+    var finesse = parseInt(data.stats.finesse.innerHTML);
+    var vitality = parseInt(data.stats.vitality.innerHTML);
+    socket.emit('startGame', { ready: true, username: username, character: data.prof.value, 
+        stats: { strength: strength, vitality: vitality, finesse: finesse }, 
             weapon1: data.weapon1.value, weapon2: data.weapon2.value });
 }
 
@@ -57,11 +67,7 @@ function initGame() {
 
     // setupStats();
 
-    gameState = GameState.IN_MENU;
     clock = new THREE.Clock();
-    socket.on('statusMessage', updateStatusMessage);
-    socket.on('updateClient', updateGameClient);
-    socket.on('gameOver', gameOver);
 
 	scene = new Physijs.Scene();
     scene.setGravity(new THREE.Vector3(0, -50, 0));
@@ -213,12 +219,17 @@ function addPlayerAndTerrain() {
             targetObject: mesh,
             // cameraPosition: new THREE.Vector3(0, 30, 50),
             cameraPosition: new THREE.Vector3(0, -5, 25),
+            cameraRotation: new THREE.Vector3(0, Math.PI, 0),
             fixed: false,
             stiffness: 1,
             matchRotation: true
         });
 
-        camera.rotation.y = mesh.rotation.y + Math.PI;
+        // camera.rotation.y = mesh.rotation.y + Math.PI;
+        // camera.rotation.z = mesh.rotation.z + Math.PI;
+        // if (camera.position.z < 0) {
+        //     camera.rotation.z = 0;
+        // }
         camera.setTarget('camTarget');
 
         mesh.addEventListener('collision', boxCollision);
@@ -283,27 +294,29 @@ function animate() {
     var player = scene.getObjectByName('player');
 
     var delta = clock.getDelta();
+    // if(gameState == GameState.GAME_IN_PROGRESS) {
+    //     if(time >= 2 && document.getElementById('statusMessage')) {
+    //         document.getElementById('statusMessage').remove();
+    //     }
+    // }
+
     if(gameState == GameState.GAME_IN_PROGRESS) {
-        if(time >= 2 && document.getElementById('statusMessage')) {
-            document.getElementById('statusMessage').remove();
-        }
+        THREE.AnimationHandler.update(delta);
+
+        setTimeout(function() {
+            requestAnimationFrame(animate);
+            // stats.update();
+        }, 1000 / 30);
+
+        scene.simulate();
+        controls.update();
+
+        // player.translateY(-5.25);
+        camera.update();
+
+        gameLoop(delta, player);
+        render();
     }
-
-    THREE.AnimationHandler.update(delta);
-
-    setTimeout(function() {
-        requestAnimationFrame(animate);
-        // stats.update();
-    }, 1000 / 30);
-
-    scene.simulate();
-    controls.update();
-
-    // player.translateY(-5.25);
-    camera.update();
-
-    gameLoop(delta, player);
-    render();
 }
 
 function render() {
@@ -478,7 +491,8 @@ function detectSkillUse() {
     if(skillUsed) {
         console.log('skill used');
         // if weapon collision detected, emit player hit
-        socket.emit('playerHit', { roomId: roomId, enemyId: enemy.id, username: enemy.username, damage: 1000 });
+        socket.emit('skillUsed', { roomId: roomId, enemyId: enemy.id, 
+            player: username, enemy: enemy.username, skill: skillUsed, damage: 1000, hitEnemy: true });
         // console.log('skill used');
         // socket.emit('playerHit', { roomId: roomId, enemyId: enemy.id, username: enemy.username, damage: 100 });
         // socket.emit('playerUseSkill', { player: username, enemy: enemyName, skill: skillUsed, hitEnemy: true });
@@ -507,9 +521,9 @@ function updateStatusMessage(data) {
 }
 
 function updateGameClient(data) {
-    var enemy = scene.getObjectByName('enemy');
+    var enemyMesh = scene.getObjectByName('enemy');
     var position = new THREE.Vector3();
-    position.getPositionFromMatrix(enemy.matrixWorld);
+    position.getPositionFromMatrix(enemyMesh.matrixWorld);
 
     var oldX = position.x;
     var oldY = position.y;
@@ -527,9 +541,9 @@ function updateGameClient(data) {
         difZ = (data.player1.position.z - oldZ);
     }
 
-    enemy.translateX(difX);
-    enemy.translateY(difY);
-    enemy.translateZ(difZ);
+    enemyMesh.translateX(difX);
+    enemyMesh.translateY(difY);
+    enemyMesh.translateZ(difZ);
 }
 
 function setClientId(data) {
@@ -544,17 +558,21 @@ function lobbyJoined(data) {
 }
 
 function gameOver(data) {
-    var text2 = document.createElement('div');
-    // text2.style.position = 'absolute';
-    text2.style.position = 'relative';
-    text2.style.left = '50%';
-    text2.style += 'text-align: center;';
-    text2.style.fontSize = '48';
-    text2.style.color = 'red';
-    text2.innerHTML = data.text;
-    // text2.style.top = 300 + 'px';
-    // text2.style.left = 300 + 'px';
-    document.body.appendChild(text2);
+    // var text2 = document.createElement('div');
+    // // text2.style.position = 'absolute';
+    // text2.style.position = 'relative';
+    // text2.style.left = '50%';
+    // text2.style += 'text-align: center;';
+    // text2.style.fontSize = '48';
+    // text2.style.color = 'red';
+    // text2.innerHTML = data.text;
+    // // text2.style.top = 300 + 'px';
+    // // text2.style.left = 300 + 'px';
+    // document.body.appendChild(text2);
+
+    gameState = GameState.GAME_OVER;
+    console.log(data);
+    window.showGameOver();
 }
 
 function startGame(data) {

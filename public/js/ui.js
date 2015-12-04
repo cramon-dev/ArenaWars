@@ -1,4 +1,9 @@
 $(document).ready(function() {
+	var pointsLeft = 120;
+	var maxPoints = 90;
+	var strength = 0;
+	var finesse = 0;
+	var vitality = 0;
 	var profession;
 	var weapon1;
 	var weapon2;
@@ -20,10 +25,102 @@ $(document).ready(function() {
 
 	$('.mainMenu').hide();
 	$('.gameLobby').hide();
+	$('.gameOverScreen').hide();
+
+
+	function sliderChanged(event, ui) {
+		console.log('Points allocated: ' + ui.value);
+		if(ui.value > 0) {
+			switch(event.target.id) {
+				case 'strengthSlider':
+					if(strength > 0) {
+						var dif = ui.value - strength;
+						if(dif != 0) {
+							var pointsAvailable = (pointsLeft - dif);
+							if(pointsAvailable >= 0) {
+								strength = ui.value;
+								pointsLeft -= dif;
+							}
+							else {
+								$('#strengthSlider').slider('value', strength);
+							}
+						}
+					}
+					else {
+						var pointsAvailable = (pointsLeft - ui.value);
+						if(pointsAvailable >= 0) {
+							strength = ui.value;
+							pointsLeft -= strength;
+						}
+						else {
+							$('#strengthSlider').slider('value', 0);
+						}
+					}
+					break;
+				case 'finesseSlider':
+					if(finesse > 0) {
+						var dif = ui.value - finesse;
+						if(dif != 0) {
+							var pointsAvailable = (pointsLeft - dif);
+							if(pointsAvailable >= 0) {
+								finesse = ui.value;
+								pointsLeft -= dif;
+							}
+							else {
+								$('#finesseSlider').slider('value', finesse);
+							}
+						}
+					}
+					else {
+						var pointsAvailable = (pointsLeft - ui.value);
+						if(pointsAvailable >= 0) {
+							finesse = ui.value;
+							pointsLeft -= finesse;
+						}
+						else {
+							$('#finesseSlider').slider('value', 0);
+						}
+					}
+					break;
+				case 'vitalitySlider':
+					if(vitality > 0) {
+						var dif = ui.value - vitality;
+						if(dif != 0) {
+							var pointsAvailable = (pointsLeft - dif);
+							if(pointsAvailable >= 0) {
+								vitality = ui.value;
+								pointsLeft -= dif;
+							}
+							else {
+								$('#vitalitySlider').slider('value', vitality);
+							}
+						}
+					}
+					else {
+						var pointsAvailable = (pointsLeft - ui.value);
+						if(pointsAvailable >= 0) {
+							vitality = ui.value;
+							pointsLeft -= vitality;
+						}
+						else {
+							$('#vitalitySlider').slider('value', 0);
+						}
+					}
+					break;
+				default:
+					break;
+			}
+		}
+		$('#pointsLeft').text(pointsLeft);
+		$('#strengthPoints').text(strength);
+		$('#finessePoints').text(finesse);
+		$('#vitalityPoints').text(vitality);
+	}
 
 
 	window.showMenu = function() {
 		$('.mainMenu').show();
+		hideGameOver();
 	};
 
 	window.hideMenu = function() {
@@ -31,13 +128,26 @@ $(document).ready(function() {
 	};
 
 	window.showLobby = function() {
+		$('#pointsLeft').text(pointsLeft - (strength + finesse + vitality));
 		profession = $('#profSelection').val();
 		modifyWeaponSelection();
+		$('#strengthSlider').slider({ min: 0, max: maxPoints, step: 5, change: sliderChanged });
+		$('#finesseSlider').slider({ min: 0, max: maxPoints, step: 5, change: sliderChanged });
+		$('#vitalitySlider').slider({ min: 0, max: maxPoints, step: 5, change: sliderChanged });
 		$('.gameLobby').show();
 	};
 
 	window.hideLobby = function() {
 		$('.gameLobby').hide();
+	};
+
+	window.showGameOver = function() {
+		$('#gameContainer').remove();
+		$('.gameOverScreen').show();
+	};
+
+	window.hideGameOver = function() {
+		$('.gameOverScreen').hide();
 	};
 
 	$('#profSelection').change(function() {
@@ -83,3 +193,27 @@ $(document).ready(function() {
     	$('#weapon2Selection').empty();
     }
 });
+
+// Old finesse slider code that could be adapted to strength/vitality
+// finesse = ui.value;
+// if(ui.value < finesse) {
+// 	var dif = finesse - ui.value;
+// 	console.log(dif);
+// 	pointsLeft += dif;
+// }
+// v2
+// if(pointsLeft > 0) {
+// 	if(finesse > 0) {
+// 		var dif = ui.value - finesse;
+// 		if(dif != 0) {
+// 			finesse = ui.value;
+// 			pointsLeft -= dif;
+// 		}
+		
+// 		// pointsLeft -= dif;
+// 	}
+// 	else {
+// 		finesse = ui.value;
+// 		pointsLeft -= finesse;
+// 	}
+// }

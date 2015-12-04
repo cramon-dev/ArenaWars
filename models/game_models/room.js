@@ -129,23 +129,9 @@ Room.prototype = {
 		this.gameState = newGameState;
 	},
 
-	// removeHealth: function(index, health) {
-	// 	this.players[index].health -= health;
-	// },
-
 	resetGameState: function() {
 		this.gameState = GameState.IN_GAME_LOBBY;
 	}
-
-	// onPlayerHit: function(data) {
-	// 	console.log('player hit');
-	// 	console.log(data);
-	// 	console.log(this.players);
-	// 	var playerHit = _.findWhere(this.players, { id: data.enemyId });
-	// 	console.log(playerHit);
-	// 	_.findWhere(this.players, { id: data.enemyId }).health -= data.damage;
-	// 	console.log(playerHit);
-	// }
 }
 
 module.exports = Room;

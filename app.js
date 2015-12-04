@@ -114,6 +114,10 @@ io.on('connection', function(client) {
 
     // Game handlers
 
+    function monitorSkillCooldowns(data) {
+
+    }
+
     function updatePosition(data) {
         console.log('Got update position');
 
@@ -128,70 +132,60 @@ io.on('connection', function(client) {
 
     function playerHit(data) {
         console.log('player was hit');
-        console.log(data);
         var room = _.findWhere(roomList, { roomId: data.roomId });
-        console.log(room);
 
-        var playerHit = _.findWhere(room.getPlayers(), { id: data.enemyId });
-        console.log('Player health before: ' + playerHit.getHealth());
-        playerHit.health -= data.damage;
-        // _.findWhere(this.players, { id: data.enemyId }).health -= data.damage;
-        console.log('Player health after: ' + playerHit.getHealth());
+        _.findWhere(room.getPlayers(), { id: data.enemyId }).health -= data.damage;
     }
 
     function skillUsed(data) {
         console.log('skill was used');
-        console.log(data);        
+        console.log(data);
+        playerHit(data);
     }
 
     function gameOver(players) {
-        var winner = null;
-        var loser = null;
+        // assuming players haven't disconnected
+        if(players.length > 1) {
+            var winner = null;
+            var loser = null;
 
-        if(players[0].health <= 0) {
-            winner = players[1];
-            loser = players[0];
-        }
+            if(players[0].health <= 0) {
+                winner = players[1];
+                loser = players[0];
+            }
 
-        if(players[1].health <= 0) {
-            winner = players[0];
-            loser = players[1];
-        }
+            if(players[1].health <= 0) {
+                winner = players[0];
+                loser = players[1];
+            }
 
-        console.log('Player 1 health: ' + players[0].health);
-        console.log('Player 2 health: ' + players[1].health);
-        // for(var i in players) {
-        //     console.log('Player health: ' + players[i].getHealth());
-        //     if(players[i].getHealth() <= 0) {
-        //         gameOver = true;
-        //     }
-        // }
+            console.log('Player 1 health: ' + players[0].health);
+            console.log('Player 2 health: ' + players[1].health);
 
-        if(winner) {
-            return { gameOver: true, winner: winner, loser: loser };
+            if(winner) {
+                return { gameOver: true, winner: winner, loser: loser };
+            }
+            else {
+                return { gameOver: false };
+            }
         }
         else {
-            return { gameOver: false };
+            // if someone disconnects, the player who stayed automatically wins
+            return { gameOver: true, winner: players[0] };
         }
     }
-
-    // function updatePlayerPosition(data) {
-        // how will i set player position here?
-        // data.isPlayer1 ? (player1.position = data.position) : (player2.position = data.position);
-    // }
 
     function beginGame(room) {
         room.startGame();
         var players = room.getPlayers();
         io.emit('startGame', { player1: players[0], player2: players[1] });
-        winston.info(players[0]);
 
         var gameLoop = setInterval(function() {
             io.emit('updateClient', { player1: players[0], player2: players[0] });
-            
-            var results = gameOver(players);
+
+            var results = gameOver(room.getPlayers());
             if(results.gameOver) {
-                clearInterval(this);
+                clearInterval(gameLoop);
 
                 updateStats(results);
 
@@ -217,57 +211,46 @@ io.on('connection', function(client) {
             battleWon: false
         };
 
-        var winnerUrl = 'http://localhost:3000/api/stats/' + results.winner.username;
-        var loserUrl = 'http://localhost:3000/api/stats/' + results.loser.username;
+        // if client didn't disconnect before game ends, do something?
 
-        request(winnerUrl, {
-            method: 'PUT',
-            headers: { 'Authorization': 'Basic YWRtaW4xOjIwMDdkMWY3NWE5YzEwYzFkYTcwYjFiNTQ3NmVmMjhjZWNhNDk5YjA2N2M4MmM2OQ==', 'Content-Type': 'application/json' },
-            json: winnerBody
-        });
+        if(results.winner) {
+            var winnerUrl = 'http://localhost:3000/api/stats/' + results.winner.username;
+            request(winnerUrl, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Basic YWRtaW4xOjIwMDdkMWY3NWE5YzEwYzFkYTcwYjFiNTQ3NmVmMjhjZWNhNDk5YjA2N2M4MmM2OQ==', 'Content-Type': 'application/json' },
+                json: winnerBody
+            });
+        }
 
-        request(loserUrl, {
-            method: 'PUT',
-            headers: { 'Authorization': 'Basic YWRtaW4xOjIwMDdkMWY3NWE5YzEwYzFkYTcwYjFiNTQ3NmVmMjhjZWNhNDk5YjA2N2M4MmM2OQ==', 'Content-Type': 'application/json' },
-            json: loserBody
-        });
+        if(results.loser) {
+            var loserUrl = 'http://localhost:3000/api/stats/' + results.loser.username;
+            request(loserUrl, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Basic YWRtaW4xOjIwMDdkMWY3NWE5YzEwYzFkYTcwYjFiNTQ3NmVmMjhjZWNhNDk5YjA2N2M4MmM2OQ==', 'Content-Type': 'application/json' },
+                json: loserBody
+            });
+        }
     }
 
 
     // Socket.IO event listeners    
 
     client.on('searchForMatch', function(username) {
-        // var allRoomsFull = true;
         for(var i in roomList) {
             if(roomList[i].getRoomState != RoomState.FULL) {
                 roomList[i].addPlayer({ id: client.id, username: username, ready: false });
-                console.log('player joined room');
-                // winston.info(roomList[i]);
-                // allRoomsFull = false;
+                winston.info('player joined room');
                 break;
             }
         }
-
-        // some check to see if all rooms are full
-        // roomList.push(new Room(data));
-
-        // winston.info(roomList);
-
-        // console.log(roomList);
-
-        // console.log('No available room found, creating a new room');
-        // // Assuming no empty room was found, create a new one and place the player in it.
-        // roomList.push(new Room());
-        // roomList[roomList.length - 1].addPlayer(data);
-        // winston.info(roomList[roomList.length - 1]);
-
-        // io.emit('statusMessage', { text: 'Waiting for opponent..' });
     });
 
     client.on('disconnect', function() {
         console.log('Client disconnected');
         for(var i in roomList) {
             if(roomList[i].removePlayer(client.id)) {
+                roomList[i].updateRoomState();
+                roomList[i].updateGameState(GameState.GAME_OVER);
                 break;
             }
         }
@@ -303,20 +286,16 @@ io.on('connection', function(client) {
                         break;
                 }
 
+                client.on('skillUsed', skillUsed);
                 io.to(client.id).emit('setClientId', { clientId: client.id, roomId: roomList[i].getRoomId() });
                 
                 player.setUsername(data.username);
                 player.setStats(data.stats.strength, data.stats.vitality, data.stats.finesse);
                 roomList[i].setPlayer(client.id, player);
-                winston.info(player);
 
                 roomList[i].togglePlayerReady(client.id);
 
                 if(roomList[i].getAllPlayersReady()) {
-                    client.on('skillUsed', skillUsed);
-                    client.on('playerHit', playerHit);
-                    // io.emit('statusMessage', { text: 'Fight!' });
-                    // winston.info(roomList[i]);
                     beginGame(roomList[i]);
                 }
                 else {

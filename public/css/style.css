@@ -82,3 +82,8 @@ a {
 .gameLobby {
     width: 45%;
 }
+
+.gameOverScreen {
+    width: 45%;
+    height: 400px;
+}
