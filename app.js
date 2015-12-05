@@ -26,7 +26,7 @@ var Buff = require('./models/game_models/buff.js');
 var Debuff = require('./models/game_models/debuff.js');
 var Weapon = require('./models/game_models/weapon.js');
 var Skill = require('./models/game_models/skill.js');
-var refreshRate = 1000;
+var refreshRate = 2000;
 var io = require('socket.io').listen(server);
 server.listen(80);
 var roomList = [ new Room(), new Room(), new Room() ];
@@ -100,6 +100,9 @@ app.use(function(err, req, res, next) {
 // Game logic
 
 io.on('connection', function(client) {
+    var player1Pos = {x: 0, y: 25, z: -50};
+    var player2Pos = {x: 0, y: 25, z: 70};
+
     console.log('Client connected to server');
     // winston.info(roomList);
     // var roomId;
@@ -178,12 +181,16 @@ io.on('connection', function(client) {
     function beginGame(room) {
         room.startGame();
         var players = room.getPlayers();
+        players[0].setPosition(player1Pos);
+        players[1].setPosition(player2Pos);
+
         io.emit('startGame', { player1: players[0], player2: players[1] });
 
         var gameLoop = setInterval(function() {
-            io.emit('updateClient', { player1: players[0], player2: players[0] });
+            var updatedPlayers = room.getPlayers();
+            io.emit('updateClient', { player1: updatedPlayers[0], player2: updatedPlayers[1] });
 
-            var results = gameOver(room.getPlayers());
+            var results = gameOver(updatedPlayers);
             if(results.gameOver) {
                 clearInterval(gameLoop);
 
@@ -268,12 +275,12 @@ io.on('connection', function(client) {
                     case "Warrior":
                         player = new Warrior();
                         player.setWeapon1(new Weapon(data.weapon1));
-                        player.setWeapon2(new Weapon(data.weapon2));
+                        // player.setWeapon2(new Weapon(data.weapon2));
                         break;
                     case "Assassin":
                         player = new Assassin();
                         player.setWeapon1(new Weapon(data.weapon1));
-                        player.setWeapon2(new Weapon(data.weapon2));
+                        // player.setWeapon2(new Weapon(data.weapon2));
                         break;
                     case "Sorcerer":
                         player = new Sorcerer();
@@ -282,7 +289,7 @@ io.on('connection', function(client) {
                     default:
                         player = new Warrior();
                         player.setWeapon1(new Weapon(data.weapon1));
-                        player.setWeapon2(new Weapon(data.weapon2));
+                        // player.setWeapon2(new Weapon(data.weapon2));
                         break;
                 }
 

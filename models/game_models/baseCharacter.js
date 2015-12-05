@@ -1,5 +1,6 @@
 function BaseCharacter() {
-	this.health = 5000;
+	this.maxHealth = 5000;
+	this.health = this.maxHealth;
 	this.username = null;
 	this.movementSpeed = .95;
 	this.position = {};
@@ -12,6 +13,10 @@ function BaseCharacter() {
 }
 
 BaseCharacter.prototype = {
+	getMaxHealth: function() {
+		return this.maxHealth;
+	},
+
 	getHealth: function() {
 		return this.health;
 	},
@@ -33,7 +38,7 @@ BaseCharacter.prototype = {
 	},
 
 	setPosition: function(data) {
-		this.position = data.position;
+		this.position = data;
 	},
 
 	getResilience: function() {
@@ -53,12 +58,14 @@ BaseCharacter.prototype = {
 	},
 
 	getStats: function() {
-		return { health: this.health, movementSpeed: this.movementSpeed, resilience: this.resilience,
-			strength: this.strength, critChance: this.critChance, critDamage: this.critDamage };
+		return { maxHealth: this.maxHealth, health: this.health, 
+			movementSpeed: this.movementSpeed, resilience: this.resilience, strength: this.strength, 
+				critChance: this.critChance, critDamage: this.critDamage };
 	},
 
 	setStats: function(strength, vitality, finesse) {
-		this.health += vitality * 50;
+		this.maxHealth += vitality * 50;
+		this.health = this.maxHealth;
 		this.resilience += vitality * 2;
 		this.strength += strength;
 		this.critChance += (finesse / 100);

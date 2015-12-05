@@ -62,12 +62,13 @@ a {
 }
 
 .mainMenu {
-    width: 45%;
+    width: 400px;
     margin: 0 auto;
 }
 
 .mainMenu img {
     display: block;
+    margin: 0 auto;
 }
 
 .mainMenu input {
@@ -86,4 +87,12 @@ a {
 .gameOverScreen {
     width: 45%;
     height: 400px;
+}
+
+/* Game UI */
+
+.gameUI {
+    display: inline-block;
+    position: absolute;
+    width: 100%;
 }

@@ -104,53 +104,6 @@ router.put('/stats/:username', isAuthorized, function(req, res, next) {
 			res.status(200);
 			return res.send(result);
 		});
-	// dbManager.getUser(req.params.username, function(err, user) {
-	// 	var newStats = {};
-	// 	var battleWon = (req.body.battleWon == 'true' || req.body.battleWon) ? true : false;
-
-	// 	try {
-	// 		if(isNaN(req.body.kills) || isNaN(req.body.deaths)) {
-	// 			console.log('Improper format');
-	// 			res.status(400);
-	// 			throw { message: 'Inputted data was not properly formatted', status: 400 };
-	// 		}
-	// 		newStats.kills = parseInt(req.body.kills);
-	// 		newStats.deaths = parseInt(req.body.deaths);
-	// 		console.log('Kills: ' + newStats.kills);
-	// 		console.log('Deaths: ' + newStats.deaths);
-	// 		// if(isNaN(newStats.kills) || isNaN(newStats.deaths)) {
-	// 		// 	res.status(400);
-	// 		// 	throw { message: 'Inputted data was not properly formatted' };
-	// 		// }
-	// 	}
-	// 	catch(ex) {
-	// 		console.log('Exception caught');
-	// 		console.log('Status: ' + ex.status || 500);
-	// 		res.status(ex.status || 500);
-	// 		// return res.send('Stats unsuccessfully updated for ' + req.params.username + '\nReason: ' + ex.message);
-	// 		res.send('Stats unsuccessfully updated for ' + req.params.username + '\nReason: ' + ex.message);
-	// 		next();
-	// 	}
-
-	// 	user.stats = {
-	// 		kills: user.stats.kills + newStats.kills,
-	// 		deaths: user.stats.deaths + newStats.deaths,
-	// 		wins: (battleWon ? user.stats.wins + 1 : user.stats.wins),
-	// 		losses: (battleWon ? user.stats.losses : user.stats.losses + 1)
-	// 	}
-
-	// 	// res.status(200);
-	// 	// res.send('okay');
-	// 	dbManager.updateUser(user, function(err) {
-	// 		if(err) {
-	// 			res.status(500);
-	// 			return res.send(err);
-	// 		}
-
-	// 		res.status(200);
-	// 		res.send('Stats successfully updated for ' + req.params.username);
-	// 	});
-	// });
 });
 
 
@@ -191,23 +144,6 @@ function isAuthorized(req, res, next) {
 
         		return next();
         	});
-
-        // dbManager.getApiUser(username, function(err, apiUser) {
-        // 	if(err) {
-        // 		res.status(500);
-        // 		return res.send(err);
-        // 	}
-
-        // 	if(apiUser) {
-        // 		if(apiUser.validPassword(pass)) {
-        // 			console.log('Valid API password');
-        // 			return next();
-        // 		}
-        // 	}
-
-        // 	res.status(401);
-        // 	return res.send('Your credentials are invalid.');
-        // });
 	}
 	else {
 		res.status(403);

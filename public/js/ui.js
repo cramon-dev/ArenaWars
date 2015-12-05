@@ -5,8 +5,6 @@ $(document).ready(function() {
 	var finesse = 0;
 	var vitality = 0;
 	var profession;
-	var weapon1;
-	var weapon2;
 	var stats;
 	var warriorWeapons = [ 
 		'<option value="Greatsword">Greatsword</option>',
@@ -26,6 +24,7 @@ $(document).ready(function() {
 	$('.mainMenu').hide();
 	$('.gameLobby').hide();
 	$('.gameOverScreen').hide();
+	$('.gameUI').hide();
 
 
 	function sliderChanged(event, ui) {
@@ -141,6 +140,14 @@ $(document).ready(function() {
 		$('.gameLobby').hide();
 	};
 
+	window.showGameUI = function() {
+		$('.gameUI').show();
+	};
+
+	window.hideGameUI = function() {
+		$('.gameUI').hide();
+	};
+
 	window.showGameOver = function() {
 		$('#gameContainer').remove();
 		$('.gameOverScreen').show();
@@ -150,6 +157,16 @@ $(document).ready(function() {
 		$('.gameOverScreen').hide();
 	};
 
+	window.updateHealth = function(player1, player2) {
+		var p1Health = ((player1.health / player1.maxHealth) * 100);
+	    console.log('Player 1 health: ' + p1Health);
+	    $('#healthBar').css('width', p1Health + '%').attr('aria-valuenow', p1Health);
+
+	    var p2Health = ((player2.health / player2.maxHealth) * 100);
+	    console.log('Player 2 health: ' + p2Health);
+	    $('#enemyHealthBar').css('width', p2Health + '%').attr('aria-valuenow', p2Health);
+	};
+
 	$('#profSelection').change(function() {
 		profession = this.value;
 
@@ -157,28 +174,28 @@ $(document).ready(function() {
 	});
 
 	function modifyWeaponSelection() {
-		profession == 'Sorcerer' ? $('#weapon2Selection').hide() : $('#weapon2Selection').show();
+		// profession == 'Sorcerer' ? $('#weapon2Selection').hide() : $('#weapon2Selection').show();
 		clearWeaponSelections();
 
 		switch(profession) {
             case "Warrior":
             	for(var i in warriorWeapons) {
             		$('#weapon1Selection').append(warriorWeapons[i]);
-            		$('#weapon2Selection').append(warriorWeapons[i]);
+            		// $('#weapon2Selection').append(warriorWeapons[i]);
             	}
                 break;
 
             case "Assassin":
             	for(var i in assassinWeapons) {
             		$('#weapon1Selection').append(assassinWeapons[i]);
-            		$('#weapon2Selection').append(assassinWeapons[i]);
+            		// $('#weapon2Selection').append(assassinWeapons[i]);
             	}
                 break;
 
             case "Sorcerer":
             	for(var i in sorcererWeapons) {
             		$('#weapon1Selection').append(sorcererWeapons[i]);
-            		$('#weapon2Selection').hide();
+            		// $('#weapon2Selection').hide();
             	}
                 break;
 
@@ -190,7 +207,7 @@ $(document).ready(function() {
 
     function clearWeaponSelections() {
     	$('#weapon1Selection').empty();
-    	$('#weapon2Selection').empty();
+    	// $('#weapon2Selection').empty();
     }
 });
 

@@ -1,10 +1,8 @@
 var scene, socket, camera, renderer, controls, container, 
         roomId, username, playerStats, clientId, enemyPos, enemy, gameState, clock, 
-            stats, mouseX, mouseY, walkAnim, hudContainer, hudCamera, hudScene;
+            stats, mouseX, mouseY, walkAnim, hudContainer, hudCamera, hudScene,
+                isPlayer1, player1Pos, player2Pos;
 var timeInterval = 0;
-var isPlayer1;
-var player1Pos = {x: 0, y: 25, z: -50};
-var player2Pos = {x: 0, y: 25, z: 70};
 var WIDTH = 1280;
 var HEIGHT = 720;
 var AXIS_CAM_DISTANCE = 300;
@@ -57,7 +55,8 @@ function readyToStart(data) {
     var vitality = parseInt(data.stats.vitality.innerHTML);
     socket.emit('startGame', { ready: true, username: username, character: data.prof.value, 
         stats: { strength: strength, vitality: vitality, finesse: finesse }, 
-            weapon1: data.weapon1.value, weapon2: data.weapon2.value });
+            weapon1: data.weapon1.value });
+    // When I'm ready to enable weapon swapping, I'll include weapon 2 again
 }
 
 function initGame() {
@@ -95,9 +94,9 @@ function initGame() {
     container = document.getElementById('gameContainer');
     container.appendChild(renderer.domElement);
 
-    createHud();
-    addSky();
-    addPlayerAndTerrain();
+    // createHud();
+    // addSky();
+    // addModels();
     setupKeyControls();
 
 
@@ -113,6 +112,8 @@ function initGame() {
         camera.aspect = newWidth / newHeight;
         camera.updateProjectionMatrix();
     });
+
+    addResources();
 }
 
 function setupStats() {
@@ -148,7 +149,30 @@ function createHud() {
     hudScene.add(sprite);
 }
 
+function addResources() {
+    addSky()
+        .then(function(result) {
+            return addPlayer();
+        })
+        .then(function(result) {
+            return addTerrain();
+        })
+        .then(function(result) {
+            return addWeapon();
+        })
+        .then(function(result) {
+            console.log('All done loading resources');
+            window.showGameUI();
+            animate();
+        })
+        .catch(function(error) {
+            console.log('error occurred: ' + error);
+        });
+}
+
 function addSky() {
+    var deferred = Q.defer();
+
     var imagePrefix = "../js/assets/textures/skybox/skyrender000";
     var imageSuffix = ".png";
     var skyGeometry = new THREE.CubeGeometry(3750, 3750, 3750); // Set this to just below the camera's draw distance
@@ -164,31 +188,27 @@ function addSky() {
     var skyMaterial = new THREE.MeshFaceMaterial(materialArray);
     var skyBox = new THREE.Mesh(skyGeometry, skyMaterial);
     scene.add(skyBox);
+
+    deferred.resolve('skybox successfully added');
+
+    return deferred.promise;
 }
 
-function addPlayerAndTerrain() {
+function addPlayer() {
+    var deferred = Q.defer();
+
     var loader = new THREE.JSONLoader();
     loader.load("../js/assets/models/human.json", function (model) {
-        // var mat = new THREE.MeshLambertMaterial({color: 0xFFFFFF, skinning: true});
         var mat = Physijs.createMaterial(
             new THREE.MeshLambertMaterial({color: 0xFFFFFF}),
             0,
             0
         );
-        // var mesh = new THREE.SkinnedMesh(model, mat);
-        // var enemyMesh = new THREE.SkinnedMesh(model, mat);
         var mesh = new Physijs.BoxMesh(model, mat);
         var enemyMesh = new Physijs.BoxMesh(model, mat);
 
-        // walkAnim = new THREE.Animation(mesh, model.animations[0]);
-        // animation.play();
-
         mesh.scale.set(0.5, 0.5, 0.5);
         enemyMesh.scale.set(0.5, 0.5, 0.5);
-        // mesh.position.y = 75;
-        // mesh.position.z = -350;
-        // mesh.rotation.set(0, 0, 0);
-        // mesh.rotateY(Math.PI);
         if(isPlayer1) {
             mesh.position.x = player1Pos.x;
             mesh.position.y = player1Pos.y;
@@ -224,53 +244,80 @@ function addPlayerAndTerrain() {
             stiffness: 1,
             matchRotation: true
         });
-
-        // camera.rotation.y = mesh.rotation.y + Math.PI;
-        // camera.rotation.z = mesh.rotation.z + Math.PI;
-        // if (camera.position.z < 0) {
-        //     camera.rotation.z = 0;
-        // }
         camera.setTarget('camTarget');
 
         mesh.addEventListener('collision', boxCollision);
 
-        var terrainTexture = new THREE.MeshLambertMaterial({
-            map: THREE.ImageUtils.loadTexture('../js/assets/textures/terrainv3_final.png'),  // specify and load the texture
-            colorAmbient: [0.480000026226044, 0.480000026226044, 0.480000026226044],
-            colorDiffuse: [0.480000026226044, 0.480000026226044, 0.480000026226044],
-            colorSpecular: [0.8999999761581421, 0.8999999761581421, 0.8999999761581421]
-        });
-
-        var loader = new THREE.JSONLoader();
-        loader.load("../js/assets/models/terrainv3.json", function(geometry) {
-            // Add ground
-            var ground = new Physijs.BoxMesh(
-                geometry,
-                terrainTexture,
-                0
-            );
-
-            var walkableGround = new Physijs.BoxMesh(
-                new THREE.CubeGeometry(1550, 4, 1550),
-                new THREE.MeshLambertMaterial({ color: 0xFFFFFF }),
-                0
-            );
-
-            walkableGround.name = 'ground';
-            walkableGround.visible = false;
-            walkableGround.position.y = 8;
-            // walkableGround.position.x = -150;
-            scene.add(walkableGround);
-
-            ground.name = 'ground';
-            ground.scale.x = 110;
-            ground.scale.y = 110;
-            ground.scale.z = 110;
-            ground.position.y = -100;
-            scene.add(ground);
-            animate();
-        }, "../js/assets/textures/terrainv3_final.png");
+        deferred.resolve('players loaded');
     });
+
+    return deferred.promise;
+}
+
+function addTerrain() {
+    var deferred = Q.defer();
+
+    var terrainTexture = new THREE.MeshLambertMaterial({
+        map: THREE.ImageUtils.loadTexture('../js/assets/textures/terrainv3_final.png'),  // specify and load the texture
+        colorAmbient: [0.480000026226044, 0.480000026226044, 0.480000026226044],
+        colorDiffuse: [0.480000026226044, 0.480000026226044, 0.480000026226044],
+        colorSpecular: [0.8999999761581421, 0.8999999761581421, 0.8999999761581421]
+    });
+
+    var loader = new THREE.JSONLoader();
+    loader.load("../js/assets/models/terrainv3.json", function(geometry) {
+        // Add ground
+        var ground = new Physijs.BoxMesh(
+            geometry,
+            terrainTexture,
+            0
+        );
+
+        var walkableGround = new Physijs.BoxMesh(
+            new THREE.CubeGeometry(1550, 4, 1550),
+            new THREE.MeshLambertMaterial({ color: 0xFFFFFF }),
+            0
+        );
+
+        walkableGround.name = 'ground';
+        walkableGround.visible = false;
+        walkableGround.position.y = 8;
+        // walkableGround.position.x = -150;
+        scene.add(walkableGround);
+
+        ground.name = 'ground';
+        ground.scale.x = 110;
+        ground.scale.y = 110;
+        ground.scale.z = 110;
+        ground.position.y = -100;
+        scene.add(ground);
+
+        deferred.resolve('terrain loaded');
+    }, "../js/assets/textures/terrainv3_final.png");
+
+    return deferred.promise;
+}
+
+function addWeapon() {
+    var deferred = Q.defer();
+
+    var loader = new THREE.JSONLoader();
+    loader.load("../js/assets/models/weapons/greatsword_final.json", function(geometry) {
+        var mat = new THREE.MeshBasicMaterial({color: 0x4D4D4D});
+        var greatsword = new THREE.Mesh(geometry, mat);
+        var player = scene.getObjectByName('player');
+
+        greatsword.name = 'greatsword';
+        // greatsword.x = 0;
+        // greatsword.position.y = 20;
+        // greatsword.position.z = 50;
+        player.add(greatsword);
+        scene.add(greatsword);
+
+        deferred.resolve('greatsword loaded');
+    }, null);
+
+    return deferred.promise;
 }
 
 function boxCollision(otherObj, relativeVelocity, relativeRotation, contactNormal) {
@@ -321,7 +368,7 @@ function animate() {
 
 function render() {
     renderer.render(scene, camera);
-    renderer.render(hudScene, hudCamera);
+    // renderer.render(hudScene, hudCamera);
 }
 
 function gameLoop(delta, player) {
@@ -525,6 +572,13 @@ function updateGameClient(data) {
     var position = new THREE.Vector3();
     position.getPositionFromMatrix(enemyMesh.matrixWorld);
 
+    if(isPlayer1) {
+        window.updateHealth(data.player1, data.player2);
+    }
+    else {
+        window.updateHealth(data.player2, data.player1);
+    }
+
     var oldX = position.x;
     var oldY = position.y;
     var oldZ = position.z;
@@ -547,8 +601,6 @@ function updateGameClient(data) {
 }
 
 function setClientId(data) {
-    console.log('My client id: ' + data.clientId);
-    console.log('My room id: ' + data.roomId);
     clientId = data.clientId;
     roomId = data.roomId;
 }
@@ -572,10 +624,15 @@ function gameOver(data) {
 
     gameState = GameState.GAME_OVER;
     console.log(data);
+    window.hideGameUI();
     window.showGameOver();
 }
 
 function startGame(data) {
+    console.log(data);
+    player1Pos = data.player1.position;
+    player2Pos = data.player2.position;
+
     if(clientId == data.player1.id) {
         isPlayer1 = true;
         playerStats = data.player1;
