@@ -359,7 +359,6 @@ function animate() {
         scene.simulate();
         controls.update();
 
-        // player.translateY(-5.25);
         camera.update();
 
         gameLoop(delta, player);
