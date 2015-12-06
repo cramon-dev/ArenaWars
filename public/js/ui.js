@@ -28,12 +28,14 @@ $(document).ready(function() {
 
 
 	function sliderChanged(event, ui) {
-		console.log('Points allocated: ' + ui.value);
+		// If the user allocated any points
 		if(ui.value > 0) {
 			switch(event.target.id) {
 				case 'strengthSlider':
+					// If the user previously modified the strength slider
 					if(strength > 0) {
 						var dif = ui.value - strength;
+						// This is a workaround to an issue where clicking on the slider without even allocating points will attempt to allocate points
 						if(dif != 0) {
 							var pointsAvailable = (pointsLeft - dif);
 							if(pointsAvailable >= 0) {
@@ -41,18 +43,19 @@ $(document).ready(function() {
 								pointsLeft -= dif;
 							}
 							else {
-								$('#strengthSlider').slider('value', strength);
+								$('#strengthSlider').slider('value', strength); // Otherwise, reset the slider to its original value
 							}
 						}
 					}
 					else {
 						var pointsAvailable = (pointsLeft - ui.value);
+						// If there are still points available after the user's selection
 						if(pointsAvailable >= 0) {
-							strength = ui.value;
-							pointsLeft -= strength;
+							strength = ui.value; // Allocate strength points
+							pointsLeft -= strength; // Remove points from points left
 						}
 						else {
-							$('#strengthSlider').slider('value', 0);
+							$('#strengthSlider').slider('value', 0); // Otherwise, reset slider to 0
 						}
 					}
 					break;
@@ -149,7 +152,7 @@ $(document).ready(function() {
 	};
 
 	window.showGameOver = function() {
-		$('#gameContainer').remove();
+		$('#gameContainer').empty();
 		$('.gameOverScreen').show();
 	};
 
@@ -159,11 +162,10 @@ $(document).ready(function() {
 
 	window.updateHealth = function(player1, player2) {
 		var p1Health = ((player1.health / player1.maxHealth) * 100);
-	    console.log('Player 1 health: ' + p1Health);
 	    $('#healthBar').css('width', p1Health + '%').attr('aria-valuenow', p1Health);
+	    $('#healthBar').text(player1.health + ' / ' + player1.maxHealth);
 
 	    var p2Health = ((player2.health / player2.maxHealth) * 100);
-	    console.log('Player 2 health: ' + p2Health);
 	    $('#enemyHealthBar').css('width', p2Health + '%').attr('aria-valuenow', p2Health);
 	};
 

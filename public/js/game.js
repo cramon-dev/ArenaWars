@@ -216,6 +216,7 @@ function addPlayer() {
             enemyMesh.position.x = player2Pos.x;
             enemyMesh.position.y = player2Pos.y;
             enemyMesh.position.z = player2Pos.z;
+            // mesh.rotateY(Math.PI);
             enemyMesh.rotateY(Math.PI);
         }
         else {
@@ -465,12 +466,23 @@ function detectMovement(delta) {
 
 function detectSkillUse() {
     var player = scene.getObjectByName('player'); // Make player invisible for testing purposes
+    var weapon = scene.getObjectByName('greatsword');
     var skillUsed;
 
     if(keyState[49]) {
         skillUsed = 'weap_1';
-        player.visible ? player.visible = false : player.visible = true;
-        console.log(player.visible);
+        // if(weapon.rotation.x == (Math.PI / 4)) {
+        //     console.log('Rotate weapon back');
+        //     weapon.rotateX(-(Math.PI / 4));
+        // }
+        // else {
+        //     console.log('Rotate weapon forwards');
+            weapon.rotateX(Math.PI / 4);
+            if(weapon.rotation.x == (Math.PI / 4)) {
+                weapon.rotateX(-(Math.PI / 4));
+            }
+        // }
+        // player.visible ? player.visible = false : player.visible = true;
     }
 
     if(keyState[50]) {
@@ -583,6 +595,7 @@ function updateGameClient(data) {
     var oldY = position.y;
     var oldZ = position.z;
     var difX, difY, difZ;
+    console.log('old position: ' + position);
 
     if(isPlayer1) {
         difX = (data.player2.position.x - oldX);
@@ -594,6 +607,10 @@ function updateGameClient(data) {
         difY = (data.player1.position.y - oldY);
         difZ = (data.player1.position.z - oldZ);
     }
+
+    console.log('dif x: ' + difX);
+    console.log('dif y: ' + difY);
+    console.log('dif z: ' + difZ);
 
     enemyMesh.translateX(difX);
     enemyMesh.translateY(difY);
