@@ -26,7 +26,7 @@ var Buff = require('./models/game_models/buff.js');
 var Debuff = require('./models/game_models/debuff.js');
 var Weapon = require('./models/game_models/weapon.js');
 var Skill = require('./models/game_models/skill.js');
-var refreshRate = 1000;
+var refreshRate = 50;
 var io = require('socket.io').listen(server);
 server.listen(80);
 var roomList = [ new Room(), new Room(), new Room() ];

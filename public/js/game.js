@@ -1,7 +1,7 @@
 var scene, socket, camera, renderer, controls, container, 
         roomId, username, playerStats, clientId, enemyPos, enemy, gameState, clock, 
             stats, mouseX, mouseY, walkAnim, hudContainer, hudCamera, hudScene,
-                isPlayer1, player1Pos, player2Pos;
+                isPlayer1, player1Pos, player2Pos, walkAnim, raycaster, originVec, toVec;
 var timeInterval = 0;
 var WIDTH = 1280;
 var HEIGHT = 720;
@@ -75,9 +75,9 @@ function initGame() {
 	// camera.position.x = -200;
 	// camera.position.y = 200;
 	// camera.position.z = 350;
-    camera.position.x = -28;
-    camera.position.y = 28;
-    camera.position.z = 50;
+    // camera.position.x = -28;
+    // camera.position.y = 28;
+    // camera.position.z = 50;
 	camera.lookAt(scene.position);
 
 	renderer = new THREE.WebGLRenderer();
@@ -93,12 +93,7 @@ function initGame() {
 
     container = document.getElementById('gameContainer');
     container.appendChild(renderer.domElement);
-
-    // createHud();
-    // addSky();
-    // addModels();
     setupKeyControls();
-
 
     // Event listeners
 
@@ -204,11 +199,16 @@ function addPlayer() {
             0,
             0
         );
+        var enemyMat = Physijs.createMaterial(
+            new THREE.MeshLambertMaterial({color: 0x990000}),
+            0,
+            0
+        );
         var mesh = new Physijs.BoxMesh(model, mat);
-        var enemyMesh = new Physijs.BoxMesh(model, mat);
+        var enemyMesh = new Physijs.BoxMesh(model, enemyMat);
 
-        mesh.scale.set(0.5, 0.5, 0.5);
-        enemyMesh.scale.set(0.5, 0.5, 0.5);
+        mesh.scale.set(0.4, 0.4, 0.4);
+        enemyMesh.scale.set(0.4, 0.4, 0.4);
         if(isPlayer1) {
             mesh.position.x = player1Pos.x;
             mesh.position.y = player1Pos.y;
@@ -238,9 +238,8 @@ function addPlayer() {
         camera.addTarget({
             name: 'camTarget',
             targetObject: mesh,
-            // cameraPosition: new THREE.Vector3(0, 30, 50),
-            cameraPosition: new THREE.Vector3(0, -5, 25),
-            cameraRotation: new THREE.Vector3(0, Math.PI, 0),
+            cameraPosition: new THREE.Vector3(0, 0, 25),
+            cameraRotation: new THREE.Euler(0, Math.PI, 0, 'XYZ'),
             fixed: false,
             stiffness: 1,
             matchRotation: true
@@ -305,15 +304,25 @@ function addWeapon() {
     var loader = new THREE.JSONLoader();
     loader.load("../js/assets/models/weapons/greatsword_final.json", function(geometry) {
         var mat = new THREE.MeshBasicMaterial({color: 0x4D4D4D});
-        var greatsword = new THREE.Mesh(geometry, mat);
+        var playerWeapon = new THREE.Mesh(geometry, mat);
         var player = scene.getObjectByName('player');
 
-        greatsword.name = 'greatsword';
+        playerWeapon.name = 'playerWeapon';
         // greatsword.x = 0;
         // greatsword.position.y = 20;
         // greatsword.position.z = 50;
-        player.add(greatsword);
-        scene.add(greatsword);
+        player.add(playerWeapon);
+        scene.add(playerWeapon);
+
+        originVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
+        toVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z + 25);
+
+        raycaster = new THREE.Raycaster(
+            originVec,
+            toVec,
+            0,
+            25
+        );
 
         deferred.resolve('greatsword loaded');
     }, null);
@@ -349,9 +358,16 @@ function animate() {
     // }
 
     if(gameState == GameState.GAME_IN_PROGRESS) {
-        THREE.AnimationHandler.update(delta);
+        // THREE.AnimationHandler.update(delta);
 
         setTimeout(function() {
+            // update vectors
+            // console.log('update');
+            // console.log(originVec);
+            // console.log(toVec);
+            originVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
+            toVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z + 25);
+            raycaster.set(originVec, toVec);
             requestAnimationFrame(animate);
             // stats.update();
         }, 1000 / 30);
@@ -362,6 +378,7 @@ function animate() {
         camera.update();
 
         gameLoop(delta, player);
+
         render();
     }
 }
@@ -374,89 +391,81 @@ function render() {
 function gameLoop(delta, player) {
     timeInterval += (clock.getDelta() * 100);
 
-    if(timeInterval >= 1) {
+    if(timeInterval >= .05) {
+        // console.log('x: ' + player.position.x + '\ny: ' + player.position.y + '\nz: ' + player.position.z);
         socket.emit('updatePosition', { roomId: roomId, isPlayer1: isPlayer1, username: username, 
             position: { x: player.position.x, y: player.position.y, z: player.position.z } });
         timeInterval = 0;
     }
-
-    // console.log(clock.elapsedTime);
-    // console.log(clock.oldTime);
-
-    // updateEnemy();
-    // detectWeaponCollision();
     detectMovement(delta);
     detectSkillUse();
-
-    // // Disable controls until player finishes typing in text box?
-    // if(keyState[89]) {
-    //     console.log('bring up text box');
-    // }
 }
 
 
-// Game loop functions
-
-// function updateEnemy() {
-
-// }
+// Game functions
 
 function detectMovement(delta) {
+    var isWalking = false;
     var player = scene.getObjectByName('player');
-    // var oldPosition = { position: player.position, rotation: player.rotation };
+    var weapon = scene.getObjectByName('playerWeapon');
+    weapon.position.x = player.position.x;
+    weapon.position.y = (player.position.y - 3);
+    weapon.position.z = (player.position.z + 5);
+
     
     if (keyState[65]) {
         // A - Turn left
         player.__dirtyRotation = true;
-        player.rotation.y += 0.15;
+        // player.rotation.y += 0.15;
+
+        player.rotateY(0.15);
+        weapon.translateZ(0.15);
+
+        // weapon.rotation.y += 0.15; // make weapon follow player movement
+        // weapon.position.z += 0.15;
     }
 
     if (keyState[68]) {
         // D - Turn right
         player.__dirtyRotation = true;
-        player.rotation.y -= 0.15;
+        // player.rotation.y -= 0.15;
+
+        player.rotateY(-0.15);
+        weapon.translateZ(-0.15);
+
+        // weapon.rotation.y -= 0.15;
+        // weapon.position.z -= 0.15;
     }
     
     if (keyState[87]) {
         // W - Move forward
         // isWalking = !isWalking;
+        isWalking = true;
         player.__dirtyPosition = true;
         player.translateZ(playerStats.movementSpeed);
+        weapon.translateZ(playerStats.movementSpeed);
     }
     
     if (keyState[83]) {
         // S - Move backward
         player.__dirtyPosition = true;
-        player.translateZ(-(playerStats.movementSpeed / 3));
+        player.translateZ(-(playerStats.movementSpeed / 2));
+        weapon.translateZ(-(playerStats.movementSpeed / 2));
     }
 
     if(keyState[81]) {
         // Q - Strafe left
         player.__dirtyPosition = true;
         player.translateX(playerStats.movementSpeed / 2.5);
+        weapon.translateX(playerStats.movementSpeed / 2.5);
     }
 
     if(keyState[69]) {
         // E - Strafe right
         player.__dirtyPosition = true;
         player.translateX(-(playerStats.movementSpeed / 2.5));
+        weapon.translateX(-(playerStats.movementSpeed / 2.5));
     }
-
-
-    // if(isWalking) {
-    //     walkAnim.play();
-    // }
-    // else {
-    //     isWalking = !isWalking;
-    //     walkAnim.stop();
-    // }
-
-    // var newPosition = { position: player.position, rotation: player.rotation };
-
-    // if(oldPosition.position != newPosition.position || oldPosition.rotation != newPosition.rotation) {
-    //     console.log('Player moved');
-    //     socket.emit('playerMoved', { oldPosition: oldPosition, newPosition: newPosition });
-    // }
 }
 
 // function detectWeaponCollision() {
@@ -465,96 +474,78 @@ function detectMovement(delta) {
 
 function detectSkillUse() {
     var player = scene.getObjectByName('player'); // Make player invisible for testing purposes
-    var weapon = scene.getObjectByName('greatsword');
-    var skillUsed;
-
-    if(keyState[49]) {
-        skillUsed = 'weap_1';
-        // if(weapon.rotation.x == (Math.PI / 4)) {
-        //     console.log('Rotate weapon back');
-        //     weapon.rotateX(-(Math.PI / 4));
-        // }
-        // else {
-        //     console.log('Rotate weapon forwards');
-            weapon.rotateX(Math.PI / 4);
-            if(weapon.rotation.x == (Math.PI / 4)) {
-                weapon.rotateX(-(Math.PI / 4));
-            }
-        // }
-        // player.visible ? player.visible = false : player.visible = true;
-    }
-
-    if(keyState[50]) {
-        skillUsed = 'weap_2';
-    }
-    
-    if(keyState[51]) {
-        skillUsed = 'weap_3';
-    }
-    
-    if(keyState[52]) {
-        skillUsed = 'heal';
-        // if(!scene.getObjectByName('aoeTarget')) {
-        //     console.log('Draw aoe target cursor');
-        //     var material = new THREE.MeshBasicMaterial({
-        //         color: 0x0000ff
-        //     });
-
-        //     var radius = 5;
-        //     var segments = 32; //<-- Increase or decrease for more resolution I guess
-
-        //     var circleGeometry = new THREE.CircleGeometry(radius, segments);              
-        //     var circle = new THREE.Mesh(circleGeometry, material);
-        //     circle.name = 'aoeTarget';
-        //     circle.position.x = mouseX;
-        //     circle.position.z = mouseY;
-        //     scene.add(circle);
-        // }
-        // else {
-        //     console.log(scene.getObjectByName('aoeTarget'));
-        // }
-    }
-        
-
-    if(keyState[53]) {
-        skillUsed = 'classAbility_1';
-    }
-
-    if(keyState[54]) {
-        skillUsed = 'classAbility_2';
-    }
-
-    if(keyState[70]) {
-        skillUsed = 'classMechanic_1';
-    }
-
-    // These four only used by sorcerer
-    if(keyState[82]) {
-        skillUsed = 'classMechanic_2';
-    }
-
-    if(keyState[84]) {
-        skillUsed = 'classMechanic_3';
-    }
-
-    if(keyState[71]) {
-        skillUsed = 'classMechanic_4';
-    }
-
-    if(keyState[72]) {
-        skillUsed = 'classMechanic_5';
-    }
-
+    var weapon = scene.getObjectByName('playerWeapon');
+    var skillUsed, isAttacking;
 
     if(skillUsed) {
-        console.log('skill used');
-        // if weapon collision detected, emit player hit
-        socket.emit('skillUsed', { roomId: roomId, enemyId: enemy.id, 
-            player: username, enemy: enemy.username, skill: skillUsed, damage: 1000, hitEnemy: true });
-        // console.log('skill used');
-        // socket.emit('playerHit', { roomId: roomId, enemyId: enemy.id, username: enemy.username, damage: 100 });
-        // socket.emit('playerUseSkill', { player: username, enemy: enemyName, skill: skillUsed, hitEnemy: true });
-        skillUsed = null;
+        isAttacking = true;
+    }
+
+    if(!isAttacking) {
+        if(keyState[49]) {
+            skillUsed = 'weap_1';
+            // if(weapon.rotation.x == (Math.PI / 4)) {
+            //     console.log('Rotate weapon back');
+            //     weapon.rotateX(-(Math.PI / 4));
+            // }
+            // else {
+            //     console.log('Rotate weapon forwards');
+            animateWeapon(weapon);
+                // weapon.rotateX(Math.PI / 4);
+                // if(weapon.rotation.x == (Math.PI / 4)) {
+                //     weapon.rotateX(-(Math.PI / 4));
+                // }
+            // }
+        }
+        
+        if(keyState[52]) {
+            skillUsed = 'heal';
+        }
+
+
+        if(skillUsed) {
+            // console.log('skill used');
+            // if weapon collision detected, emit player hit
+            socket.emit('skillUsed', { roomId: roomId, enemyId: enemy.id, 
+                player: username, enemy: enemy.username, skill: skillUsed, damage: 100, hitEnemy: true });
+            // console.log('skill used');
+            // socket.emit('playerHit', { roomId: roomId, enemyId: enemy.id, username: enemy.username, damage: 100 });
+            // socket.emit('playerUseSkill', { player: username, enemy: enemyName, skill: skillUsed, hitEnemy: true });
+            skillUsed = null;
+        }
+    }
+    else {
+        console.log('already using a skill');
+    }
+}
+
+function animateWeapon(weapon) {
+    // var arrow = scene.getObjectByName('arrow');
+    // weapon.rotation.x += Math.PI / 180;
+    // if(weapon.rotation.x == (Math.PI / 180)) {
+    //     console.log('rotate back');
+    // }
+    if(weapon.rotation.x <= 0) {
+        console.log('rotate forward');
+        weapon.rotateX(Math.PI / 4);
+        // if(arrow) {
+        //     console.log('remove arrow');
+        //     scene.remove(arrow);
+        // }
+
+        var intersects = raycaster.intersectObjects( scene.children, true );
+
+        console.log(intersects);
+
+        // arrow = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), originVec, 25, Math.random() * 0xffffff);
+        // arrow.name = 'arrow';
+        // scene.add(arrow);
+        // cast ray here
+    }
+    // weapon.rotation.x += (Math.PI / 4);
+    else if(weapon.rotation.x >= (Math.PI / 4)) {
+        console.log('rotate back');
+        weapon.rotateX(-(Math.PI / 4)); //if we've finished rotating the weapon, rotate it back
     }
 }
 
@@ -594,26 +585,40 @@ function updateGameClient(data) {
     var oldY = position.y;
     var oldZ = position.z;
     var difX, difY, difZ;
-    console.log('old position: ' + position);
 
     if(isPlayer1) {
-        difX = (data.player2.position.x - oldX);
-        difY = (data.player2.position.y - oldY);
-        difZ = (data.player2.position.z - oldZ); 
+        // difX = (data.player2.position.x - oldX);
+        // difY = (data.player2.position.y - oldY);
+        // difZ = (data.player2.position.z - oldZ);
+
+        enemyMesh.__dirtyPosition = true;
+        enemyMesh.position.x = data.player2.position.x;
+        enemyMesh.position.y = data.player2.position.y;
+        enemyMesh.position.z = data.player2.position.z;
     }
     else {
-        difX = (data.player1.position.x - oldX);
-        difY = (data.player1.position.y - oldY);
-        difZ = (data.player1.position.z - oldZ);
+        // difX = (data.player1.position.x - oldX);
+        // difY = (data.player1.position.y - oldY);
+        // difZ = (data.player1.position.z - oldZ);
+
+        enemyMesh.__dirtyPosition = true;
+        enemyMesh.position.x = data.player1.position.x;
+        enemyMesh.position.y = data.player1.position.y;
+        enemyMesh.position.z = data.player1.position.z;
     }
 
-    console.log('dif x: ' + difX);
-    console.log('dif y: ' + difY);
-    console.log('dif z: ' + difZ);
+    // console.log('dif x: ' + difX);
+    // console.log('dif y: ' + difY);
+    // console.log('dif z: ' + difZ);
 
-    enemyMesh.translateX(difX);
-    enemyMesh.translateY(difY);
-    enemyMesh.translateZ(difZ);
+    // // enemyMesh.translateX(difX);
+    // // enemyMesh.translateY(difY);
+    // // enemyMesh.translateZ(difZ);
+
+    // // enemyMesh.__dirtyPosition = true;
+    // enemyMesh.position.x = difX;
+    // enemyMesh.position.y = difY;
+    // enemyMesh.position.z = difZ;
 }
 
 function setClientId(data) {
