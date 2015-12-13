@@ -9,11 +9,9 @@ $(document).ready(function() {
 	var warriorWeapons = [ 
 		'<option value="Greatsword">Greatsword</option>',
 		'<option value="Hammer">Hammer</option>',
-		'<option value="Longbow">Longbow</option>'
 	];
 	var assassinWeapons = [
-		'<option value="Dagger">Dagger</option>',
-		'<option value="Rifle">Rifle</option>',
+		'<option value="Sword">Sword</option>',
 		'<option value="Staff">Staff</option>'
 	];
 	var sorcererWeapons = [
@@ -151,8 +149,9 @@ $(document).ready(function() {
 		$('.gameUI').hide();
 	};
 
-	window.showGameOver = function() {
+	window.showGameOver = function(winnerName) {
 		$('#gameContainer').empty();
+		$('#winnerUsername').text('Winner: ' + winnerName);
 		$('.gameOverScreen').show();
 	};
 

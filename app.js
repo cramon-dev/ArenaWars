@@ -136,8 +136,12 @@ io.on('connection', function(client) {
     function playerHit(data) {
         console.log('player was hit');
         var room = _.findWhere(roomList, { roomId: data.roomId });
+        var enemy = _.findWhere(room.getPlayers(), { username: data.enemy });
 
-        _.findWhere(room.getPlayers(), { id: data.enemyId }).health -= data.damage;
+        // ((res / 2.3125) / 100) * damage
+        console.log('resilience: ' + enemy.getResilience());
+        enemy.health -= (((enemy.getResilience() / 2.3125) / 100) * data.damage);
+        // _.findWhere(room.getPlayers(), { id: data.enemyId }).health -= data.damage;
     }
 
     function skillUsed(data) {
@@ -198,7 +202,7 @@ io.on('connection', function(client) {
 
                 console.log('GAME OVER');
                 room.updateGameState(GameState.GAME_OVER);
-                io.emit('gameOver', { text: 'Game over' });
+                io.emit('gameOver', { winner: results.winner });
             }
         }, refreshRate);
     }
@@ -250,6 +254,11 @@ io.on('connection', function(client) {
                 break;
             }
         }
+    });
+
+    client.on('rematch', function(data) {
+        var room = _.findWhere(roomList, { roomId: data.roomId });
+        
     });
 
     client.on('disconnect', function() {

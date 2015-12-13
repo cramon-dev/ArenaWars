@@ -1,8 +1,10 @@
 var scene, socket, camera, renderer, controls, container, 
-        roomId, username, playerStats, clientId, enemyPos, enemy, gameState, clock, 
+        roomId, username, playerStats, clientId, enemyPos, enemy, gameState, clock, weaponChosen, 
             stats, mouseX, mouseY, walkAnim, hudContainer, hudCamera, hudScene,
                 isPlayer1, player1Pos, player2Pos, walkAnim, raycaster, originVec, toVec;
 var timeInterval = 0;
+var weaponOffset = 5;
+var refreshRate = .05;
 var WIDTH = 1280;
 var HEIGHT = 720;
 var AXIS_CAM_DISTANCE = 300;
@@ -20,6 +22,12 @@ window.resetGame = function() {
     // camera = null;
     document.getElementById('gameContainer').innerHtml = null;
     console.log('resetting scene..');
+}
+
+// Rematch
+
+function initRematch(username) {
+    socket.emit('rematch', { username: username, roomId: roomId });
 }
 
 // Initialize functions
@@ -50,6 +58,7 @@ function initLobby(name) {
 }
 
 function readyToStart(data) {
+    weaponChosen = data.weapon1.value;
     var strength = parseInt(data.stats.strength.innerHTML);
     var finesse = parseInt(data.stats.finesse.innerHTML);
     var vitality = parseInt(data.stats.vitality.innerHTML);
@@ -301,8 +310,11 @@ function addTerrain() {
 function addWeapon() {
     var deferred = Q.defer();
 
+    // check to see which weapon a player chooses
+
     var loader = new THREE.JSONLoader();
-    loader.load("../js/assets/models/weapons/greatsword_final.json", function(geometry) {
+    weaponChosen = weaponChosen.toLowerCase();
+    loader.load("../js/assets/models/weapons/" + weaponChosen + "_final.json", function(geometry) {
         var mat = new THREE.MeshBasicMaterial({color: 0x4D4D4D});
         var playerWeapon = new THREE.Mesh(geometry, mat);
         var player = scene.getObjectByName('player');
@@ -314,8 +326,16 @@ function addWeapon() {
         player.add(playerWeapon);
         scene.add(playerWeapon);
 
+        if(isPlayer1) {
+            playerWeapon.position.z = (player.position.z + weaponOffset);
+        }
+        else {
+            playerWeapon.position.z = (player.position.z - weaponOffset);
+        }
+
         originVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
         toVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z + 25);
+        // toVec = new THREE.Vector
 
         raycaster = new THREE.Raycaster(
             originVec,
@@ -365,8 +385,9 @@ function animate() {
             // console.log('update');
             // console.log(originVec);
             // console.log(toVec);
+            // console.log(player.rotation.y);
             originVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
-            toVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z + 25);
+            toVec = new THREE.Vector3(player.position.x, player.position.y, player.position.z + weaponOffset);
             raycaster.set(originVec, toVec);
             requestAnimationFrame(animate);
             // stats.update();
@@ -391,7 +412,7 @@ function render() {
 function gameLoop(delta, player) {
     timeInterval += (clock.getDelta() * 100);
 
-    if(timeInterval >= .05) {
+    if(timeInterval >= refreshRate) {
         // console.log('x: ' + player.position.x + '\ny: ' + player.position.y + '\nz: ' + player.position.z);
         socket.emit('updatePosition', { roomId: roomId, isPlayer1: isPlayer1, username: username, 
             position: { x: player.position.x, y: player.position.y, z: player.position.z } });
@@ -408,9 +429,19 @@ function detectMovement(delta) {
     var isWalking = false;
     var player = scene.getObjectByName('player');
     var weapon = scene.getObjectByName('playerWeapon');
+    // increment weapon z if player 1
+    // weapon.position.x = player.position.x;
+
+    // weapon.position.x = (Math.cos(player.rotation.y) * weaponOffset); // weapon.position.z
+    weapon.position.y = (player.position.y - 8);
+    // weapon.position.z = (Math.sin(player.rotation.y) * weaponOffset); // weapon.position.z
     weapon.position.x = player.position.x;
-    weapon.position.y = (player.position.y - 3);
-    weapon.position.z = (player.position.z + 5);
+    weapon.position.z = player.position.z + weaponOffset;
+    // console.log('weapon position\nx: ' + weapon.position.x + '\ny: ' + weapon.position.y + '\nz: ' + weapon.position.z);
+
+    // console.log('player position\nx: ' + player.position.x + '\ny: ' + player.position.y + '\nz: ' + player.position.z);
+
+    // console.log('player rotation: ' + (player.rotation.y * (180 / Math.PI)));
 
     
     if (keyState[65]) {
@@ -533,9 +564,20 @@ function animateWeapon(weapon) {
         //     scene.remove(arrow);
         // }
 
-        var intersects = raycaster.intersectObjects( scene.children, true );
+        console.log(raycaster);
+        console.log(raycaster.ray);
 
-        console.log(intersects);
+        var intersects = raycaster.intersectObjects(scene.children, true);
+
+        // console.log(intersects);
+
+        if(intersects.length > 0) {
+            console.log('intersects');
+            console.log(intersects[0]);
+            // for(var i in intersects) {
+            //     console.log(intersects[i]);
+            // }
+        }
 
         // arrow = new THREE.ArrowHelper(new THREE.Vector3(0, 0, 1), originVec, 25, Math.random() * 0xffffff);
         // arrow.name = 'arrow';
@@ -646,7 +688,7 @@ function gameOver(data) {
     gameState = GameState.GAME_OVER;
     console.log(data);
     window.hideGameUI();
-    window.showGameOver();
+    window.showGameOver(data.winner.username);
 }
 
 function startGame(data) {

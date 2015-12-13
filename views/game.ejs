@@ -109,8 +109,10 @@
 			</div>
 		</div>
 		<div class="menu gameOverScreen">
-			<h3>Game Over</h3>
-			<button class="btn btn-primary" onclick="initLobby(window.username)"/>Play Again
+			<h1>Game Over</h1>
+			<p id="winnerUsername"></p>
+			<button class="btn btn-primary" onclick="initRematch(window.username)"/>Rematch
+			<button class="btn btn-primary" onclick="initLobby(window.username)"/>Find New Opponent
 		</div>
 		<script src="../js/game.js"></script>
 		<script src="../js/ui.js"></script>
